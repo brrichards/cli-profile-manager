@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "plugins": {
+    "example-plugin@org-marketplace": [
+      {
+        "scope": "project",
+        "projectPath": "/workspaces/FluidFramework",
+        "installPath": "/home/node/.claude/plugins/cache/org-marketplace/example-plugin/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-02-12T03:34:06.629Z",
+        "lastUpdated": "2026-02-12T03:34:06.629Z",
+        "gitCommitSha": "a4d53bf1c15812729cff2e9792fd9aa882bfeed8"
+      }
+    ],
+    "security@org-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "/home/node/.claude/plugins/cache/org-marketplace/security/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-02-12T04:22:39.591Z",
+        "lastUpdated": "2026-02-12T04:22:39.591Z",
+        "gitCommitSha": "79632b9a374bd17c3805a9fb767f260b41e324c3"
+      }
+    ],
+    "code-quality@org-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "/home/node/.claude/plugins/cache/org-marketplace/code-quality/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-02-12T04:22:58.416Z",
+        "lastUpdated": "2026-02-12T04:22:58.416Z",
+        "gitCommitSha": "79632b9a374bd17c3805a9fb767f260b41e324c3"
+      }
+    ],
+    "git-workflow@org-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "/home/node/.claude/plugins/cache/org-marketplace/git-workflow/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-02-12T04:27:35.046Z",
+        "lastUpdated": "2026-02-12T04:27:35.046Z",
+        "gitCommitSha": "cb81f0e817c5d3aca5d251925853d60cb63e9d05"
+      }
+    ],
+    "testing@org-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "/home/node/.claude/plugins/cache/org-marketplace/testing/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-02-12T04:27:35.060Z",
+        "lastUpdated": "2026-02-12T04:27:35.060Z",
+        "gitCommitSha": "cb81f0e817c5d3aca5d251925853d60cb63e9d05"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "org-marketplace": {
+    "source": {
+      "source": "github",
+      "repo": "brrichards/org-marketplace"
+    },
+    "installLocation": "/home/node/.claude/plugins/marketplaces/org-marketplace",
+    "lastUpdated": "2026-02-17T03:45:40.843Z",
+    "autoUpdate": true
+  },
+  "claude-plugins-official": {
+    "source": {
+      "source": "github",
+      "repo": "anthropics/claude-plugins-official"
+    },
+    "installLocation": "/home/node/.claude/plugins/marketplaces/claude-plugins-official",
+    "lastUpdated": "2026-02-12T22:12:58.055Z"
+  }
+}

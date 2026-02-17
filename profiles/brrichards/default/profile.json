@@ -1,0 +1,24 @@
+{
+  "name": "default",
+  "version": "1.0.0",
+  "description": "",
+  "tags": [],
+  "createdAt": "2026-02-17T03:50:27.670Z",
+  "claudeVersion": "2.1.44 (Claude Code)",
+  "platform": "linux",
+  "includesSecrets": false,
+  "files": [
+    "plugins/install-counts-cache.json",
+    "plugins/installed_plugins.json",
+    "plugins/known_marketplaces.json"
+  ],
+  "contents": {
+    "plugins": [
+      "install-counts-cache",
+      "installed_plugins",
+      "known_marketplaces"
+    ]
+  },
+  "author": "brrichards",
+  "publishedAt": "2026-02-17T03:58:57.688Z"
+}
