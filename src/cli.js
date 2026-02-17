@@ -21,7 +21,7 @@ import {
 } from './commands/publish.js';
 import { getConfig } from './utils/config.js';
 
-const VERSION = '1.0.0';
+const VERSION = '0.0.2';
 
 const program = new Command();
 
@@ -33,7 +33,7 @@ ${chalk.cyan(' | |   | |_) | |\\/| |')}
 ${chalk.cyan(' | |___|  __/| |  | |')}
 ${chalk.cyan('  \\____|_|   |_|  |_|')}
 
-  ${chalk.magenta('Claude Profile Manager v' + VERSION)}
+  ${chalk.magenta('CLI Profile Manager v' + VERSION)}
 `;
 
 program

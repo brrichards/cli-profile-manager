@@ -15,7 +15,7 @@ const HEADERS_BASE = {
 //   2. Enable "Device Flow" on the app settings page
 //   3. Paste the client_id here and publish to npm
 // The client_id is public and safe to ship in source -- no secret needed.
-const OAUTH_CLIENT_ID = 'Ov23liNXmVPsBOt1a3Q9';
+const OAUTH_CLIENT_ID = 'Ov23lizYjvZYdq6OWvvb';
 
 function authHeaders(token) {
   return { ...HEADERS_BASE, 'Authorization': `Bearer ${token}` };
