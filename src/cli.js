@@ -21,7 +21,7 @@ import {
 } from './commands/publish.js';
 import { getConfig } from './utils/config.js';
 
-const VERSION = '0.0.2';
+const VERSION = '0.1.0';
 
 const program = new Command();
 
