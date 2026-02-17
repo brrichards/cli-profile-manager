@@ -13,11 +13,16 @@
     "commands/deps.md",
     "commands/perf.md",
     "commands/scaffold.md",
-    "hooks/pre-commit.md"
+    "hooks/pre-commit.md",
+    "skills/debug/SKILL.md",
+    "skills/refactor/SKILL.md",
+    "agents/code-reviewer.md"
   ],
   "contents": {
     "instructions": ["CLAUDE.md"],
     "commands": ["deps", "perf", "scaffold"],
-    "hooks": ["pre-commit"]
+    "hooks": ["pre-commit"],
+    "skills": ["debug", "refactor"],
+    "agents": ["code-reviewer"]
   }
 }

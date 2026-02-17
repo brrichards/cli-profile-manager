@@ -56,17 +56,31 @@ async function main() {
     appendFileSync(join(CLAUDE_DIR, "CLAUDE.md"), body + "\n");
   }
 
-  // Install commands as skills
+  // Install commands
   for (const cmd of contents.commands || []) {
-    console.log(`    Installing skill: ${cmd}`);
-    const skillDir = join(CLAUDE_DIR, "skills", cmd);
-    mkdirSync(skillDir, { recursive: true });
+    console.log(`    Installing command: ${cmd}`);
+    const cmdDir = join(CLAUDE_DIR, "commands");
+    mkdirSync(cmdDir, { recursive: true });
     const body = await fetchText(`${RAW_BASE}/commands/${cmd}.md`);
-    const desc = body.split("\n")[0];
-    writeFileSync(
-      join(skillDir, "SKILL.md"),
-      `---\nname: ${cmd}\ndescription: ${desc}\n---\n\n${body}\n`
-    );
+    writeFileSync(join(cmdDir, `${cmd}.md`), body);
+  }
+
+  // Install skills
+  for (const skill of contents.skills || []) {
+    console.log(`    Installing skill: ${skill}`);
+    const skillDir = join(CLAUDE_DIR, "skills", skill);
+    mkdirSync(skillDir, { recursive: true });
+    const body = await fetchText(`${RAW_BASE}/skills/${skill}/SKILL.md`);
+    writeFileSync(join(skillDir, "SKILL.md"), body);
+  }
+
+  // Install agents
+  for (const agent of contents.agents || []) {
+    console.log(`    Installing agent: ${agent}`);
+    const agentsDir = join(CLAUDE_DIR, "agents");
+    mkdirSync(agentsDir, { recursive: true });
+    const body = await fetchText(`${RAW_BASE}/agents/${agent}.md`);
+    writeFileSync(join(agentsDir, `${agent}.md`), body);
   }
 
   // Install hooks
@@ -79,6 +93,8 @@ async function main() {
   }
 
   console.log(`\n==> Done! Profile '${author}/${profile}' installed to ${CLAUDE_DIR}`);
+
+  // TODO - Add plugin/MCP install (currently no default profile includes these, but good to support in the future) 
 }
 
 main().catch((err) => {

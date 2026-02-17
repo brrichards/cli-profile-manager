@@ -16,17 +16,11 @@
       "stars": 0,
       "createdAt": "2026-02-16T00:00:00Z",
       "contents": {
-        "instructions": [
-          "CLAUDE.md"
-        ],
-        "commands": [
-          "deps",
-          "perf",
-          "scaffold"
-        ],
-        "hooks": [
-          "pre-commit"
-        ]
+        "instructions": ["CLAUDE.md"],
+        "commands": ["deps", "perf", "scaffold"],
+        "hooks": ["pre-commit"],
+        "skills": ["debug", "refactor"],
+        "agents": ["code-reviewer"]
       }
     },
     {
