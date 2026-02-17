@@ -180,7 +180,9 @@ The install script runs three steps:
 | Marketplace Path | Installed To |
 |---|---|
 | `CLAUDE.md` | `~/.claude/CLAUDE.md` (appended) |
-| `commands/<name>.md` | `~/.claude/skills/<name>/SKILL.md` |
+| `commands/<name>.md` | `~/.claude/commands/<name>.md` |
+| `skills/<name>/SKILL.md` | `~/.claude/skills/<name>/SKILL.md` |
+| `agents/<name>.md` | `~/.claude/agents/<name>.md` |
 | `hooks/<name>.md` | `~/.claude/hooks/<name>.md` |
 
 ### Environment Variables
