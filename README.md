@@ -93,7 +93,9 @@ Sensitive files (credentials, API keys) are excluded by default.
 ### Switch Between Work Personas
 
 ```bash
+# save current claude config
 cpm save work-reviewer --tags "work,code-review"
+# ... Modify claude config ...
 cpm save docs-writer --tags "work,documentation"
 
 cpm load work-reviewer
@@ -116,8 +118,8 @@ cpm install yourname/team-standards
 
 ```bash
 cpm list
-cpm search python
-cpm install marketplace/python-expert --backup
+cpm search ts
+cpm install marketplace/ts-expert --backup
 
 # Restore if needed
 cpm load .claude-backup-*
@@ -153,6 +155,68 @@ Host your own marketplace (e.g., for your company):
 3. Update `index.json`
 4. Point users to your repo: `cpm repo your-org/your-marketplace`
 
+## Auto-Install in Codespaces / Devcontainers
+
+Install Claude Code and a marketplace profile automatically with a single `postCreateCommand`.
+
+### Setup
+
+Add to your `.devcontainer/devcontainer.json`:
+
+```json
+"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs -o /tmp/install-profile.mjs && node /tmp/install-profile.mjs marketplace devtools && rm -f /tmp/install-profile.mjs"
+```
+
+Replace `marketplace devtools` with your desired `<author> <profile>`.
+
+### How It Works
+
+The install script runs three steps:
+
+1. **Installs Claude Code CLI** via `npm install -g @anthropic-ai/claude-code` (skipped if already present)
+2. **Fetches the profile manifest** (`profile.json`) from GitHub raw content for the requested author/profile
+3. **Maps marketplace files** into Claude Code's native config structure:
+
+| Marketplace Path | Installed To |
+|---|---|
+| `CLAUDE.md` | `~/.claude/CLAUDE.md` (appended) |
+| `commands/<name>.md` | `~/.claude/skills/<name>/SKILL.md` |
+| `hooks/<name>.md` | `~/.claude/hooks/<name>.md` |
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `SKIP_CLAUDE_INSTALL` | `0` | Skip Claude Code CLI install |
+| `PROFILE_BRANCH` | `main` | Branch to fetch profiles from |
+| `CLAUDE_HOME` | `~/.claude` | Override the Claude config directory |
+
+### Prerequisites
+
+- **Node.js 18+** (uses built-in `fetch`, `fs`, and `path`)
+- `postCreateCommand` runs once on container creation and on full rebuild, but not on stop/start.
+
+## Authentication
+
+### How `cpm publish` Authenticates
+
+When you run `cpm publish`, authentication happens in two stages:
+
+1. **Git Credential Manager** — `cpm` first tries to read an existing GitHub token from your local git credential store (`git credential fill`). If you already have credentials stored (e.g., from `gh auth login` or a PAT), this works automatically.
+2. **OAuth Device Flow** — If no stored credentials are found, `cpm` falls back to GitHub's OAuth device flow. It displays a URL and a one-time code, you authorize in your browser, and `cpm` receives a token. No manual PAT creation needed.
+
+### Why This Matters in Codespaces
+
+GitHub Codespaces automatically provides a `GITHUB_TOKEN`, but this token is **scoped to the current repository only**. Publishing a profile requires:
+
+1. **Forking** the marketplace repo (`brrichards/cli-profile-manager`)
+2. **Pushing a branch** to that fork
+3. **Opening a pull request** back to the upstream repo
+
+The Codespace's repo-scoped token cannot perform any of these operations on a different repository. To work around this, `cpm publish` bypasses local git entirely and uses the **GitHub Git Data API** to create commits and branches directly via authenticated API calls. This requires a token with `public_repo` scope, which is obtained through the OAuth device flow.
+
+This design also benefits users outside Codespaces — no need to configure SSH keys or manually create PATs. The device flow handles everything.
+
 ## Repository Structure
 
 ```
@@ -161,6 +225,8 @@ cli-profile-manager/
 │   ├── cli.js             # CLI entry point
 │   ├── commands/          # Command implementations
 │   └── utils/             # Utilities
+├── scripts/               # Automation scripts
+│   └── install-profile.mjs  # Codespace/devcontainer auto-installer
 ├── profiles/              # Marketplace profiles
 │   └── author/
 │       └── profile-name/
