@@ -14,7 +14,9 @@
       "contents": {
         "instructions": ["CLAUDE.md"],
         "commands": ["deps", "perf", "scaffold"],
-        "hooks": ["pre-commit"]
+        "hooks": ["pre-commit"],
+        "skills": ["debug", "refactor"],
+        "agents": ["code-reviewer"]
       }
     },
     {
