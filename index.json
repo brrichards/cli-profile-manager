@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-02-16T00:00:00Z",
+  "profiles": [
+    {
+      "name": "devtools",
+      "author": "marketplace",
+      "version": "1.0.0",
+      "description": "Developer productivity commands for dependency auditing, performance profiling, and scaffolding",
+      "tags": ["productivity", "scaffolding", "dependencies"],
+      "downloads": 0,
+      "stars": 0,
+      "createdAt": "2026-02-16T00:00:00Z",
+      "contents": {
+        "instructions": ["CLAUDE.md"],
+        "commands": ["deps", "perf", "scaffold"],
+        "hooks": ["pre-commit"]
+      }
+    },
+    {
+      "name": "code-quality",
+      "author": "marketplace",
+      "version": "1.0.0",
+      "description": "Code review, test generation, and type safety commands with quality-focused hooks",
+      "tags": ["code-review", "testing", "type-safety"],
+      "downloads": 0,
+      "stars": 0,
+      "createdAt": "2026-02-16T00:00:00Z",
+      "contents": {
+        "instructions": ["CLAUDE.md"],
+        "commands": ["review", "test-gen", "types"],
+        "hooks": ["post-save"]
+      }
+    },
+    {
+      "name": "git-workflow",
+      "author": "marketplace",
+      "version": "1.0.0",
+      "description": "Git workflow commands for PR creation, changelog generation, and commit management",
+      "tags": ["git", "workflow", "pull-requests"],
+      "downloads": 0,
+      "stars": 0,
+      "createdAt": "2026-02-16T00:00:00Z",
+      "contents": {
+        "instructions": ["CLAUDE.md"],
+        "commands": ["pr", "changelog", "squash"],
+        "hooks": ["pre-push"]
+      }
+    }
+  ]
+}
