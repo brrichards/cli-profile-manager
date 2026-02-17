@@ -1,56 +1,20 @@
 # Auto-Install Claude Code + Marketplace Profiles
 
-Install Claude Code and a marketplace profile automatically. One command, all platforms.
+Install Claude Code and a marketplace profile in a Codespace or devcontainer with a single `postCreateCommand`.
 
-## Codespaces / Devcontainers
+## Setup
 
-Add a `postCreateCommand` to `.devcontainer/devcontainer.json`:
+Add to your `.devcontainer/devcontainer.json`:
 
 ```json
-{
-  "name": "Dev with Claude Code",
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "lts"
-    }
-  },
-  "postCreateCommand": "node <(curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs) marketplace devtools",
-  "customizations": {
-    "vscode": {
-      "extensions": ["anthropic.claude-code"]
-    }
-  }
-}
+"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs -o /tmp/install-profile.mjs && node /tmp/install-profile.mjs marketplace devtools && rm -f /tmp/install-profile.mjs"
 ```
 
-## Local Install
-
-Requires Node.js 18+.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs -o install-profile.mjs && node install-profile.mjs marketplace devtools
-```
-
-Or from a cloned repo:
-
-```bash
-node scripts/install-profile.mjs marketplace devtools
-```
-
-## Available Profiles
-
-```bash
-node install-profile.mjs marketplace devtools
-node install-profile.mjs marketplace code-quality
-node install-profile.mjs marketplace git-workflow
-```
-
-Full list in [`index.json`](../index.json).
+Replace `marketplace devtools` with your desired `<author> <profile>`.
 
 ## How It Works
 
-The script fetches the profile's `profile.json` manifest from GitHub and maps files into Claude Code's native structure:
+The script installs Claude Code CLI (if not present) and fetches the profile's `profile.json` manifest from GitHub, mapping files into Claude Code's native structure:
 
 | Marketplace Path | Installed To |
 |---|---|
@@ -58,23 +22,9 @@ The script fetches the profile's `profile.json` manifest from GitHub and maps fi
 | `commands/<name>.md` | `~/.claude/skills/<name>/SKILL.md` |
 | `hooks/<name>.md` | `~/.claude/hooks/<name>.md` |
 
-### Prerequisites
+## Available Profiles
 
-- **Node.js 18+** (uses built-in `fetch`, `fs`, and `path`)
-
-## Chaining With Existing Setup
-
-```json
-{
-  "postCreateCommand": "npm install && node <(curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs) marketplace devtools"
-}
-```
-
-## Multiple Profiles
-
-```bash
-node install-profile.mjs marketplace devtools && node install-profile.mjs marketplace code-quality
-```
+Full list in [`index.json`](../index.json).
 
 ## Environment Variables
 
@@ -83,3 +33,8 @@ node install-profile.mjs marketplace devtools && node install-profile.mjs market
 | `SKIP_CLAUDE_INSTALL` | `0` | Skip Claude Code CLI install |
 | `PROFILE_BRANCH` | `main` | Branch to fetch profiles from |
 | `CLAUDE_HOME` | `~/.claude` | Override the Claude config directory |
+
+## Prerequisites
+
+- **Node.js 18+** (uses built-in `fetch`, `fs`, and `path`)
+- `postCreateCommand` runs once on container creation and on full rebuild, but not on stop/start.
