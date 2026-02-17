@@ -171,6 +171,10 @@ Replace `marketplace devtools` with your desired `<author> <profile>`.
 
 ### How It Works
 
+Note: If your repo root does not have a `.claude` directory, the script defaults to creating/using the existing `~/.claude` directory. To avoid this behaviour, create a `.claude` directory in the repo root:
+
+`mkdir <path>/<to>/<repo>/<root>/.claude`
+
 The install script runs three steps:
 
 1. **Installs Claude Code CLI** via `npm install -g @anthropic-ai/claude-code` (skipped if already present)

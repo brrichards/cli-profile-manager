@@ -393,7 +393,7 @@ export async function installFromMarketplace(profilePath, options) {
     }
 
     console.log('');
-    console.log(chalk.green('Your Claude CLI is now configured with this profile.'));
+    console.log(chalk.green(`Your Claude CLI is now configured with this profile. The profile files are located at ${claudeDir}.`));
     console.log('');
 
   } catch (error) {
