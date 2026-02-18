@@ -237,38 +237,57 @@ Install Claude Code and a marketplace profile automatically with a single `postC
 Add to your `.devcontainer/devcontainer.json`:
 
 ```json
-"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs -o /tmp/install-profile.mjs && node /tmp/install-profile.mjs marketplace devtools && rm -f /tmp/install-profile.mjs"
+// Claude Code profile
+"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs -o /tmp/install-profile.mjs && node /tmp/install-profile.mjs marketplace devtools claude && rm -f /tmp/install-profile.mjs"
+
+// GitHub Copilot profile
+"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/brrichards/cli-profile-manager/main/scripts/install-profile.mjs -o /tmp/install-profile.mjs && node /tmp/install-profile.mjs myorg frontend-team github && rm -f /tmp/install-profile.mjs"
 ```
 
-Replace `marketplace devtools` with your desired `<author> <profile>`.
+Replace `<author> <profile>` with your desired profile. The third argument selects the provider (`claude` or `github`, defaults to `claude`).
 
 ### How It Works
 
-Note: If your repo root does not have a `.claude` directory, the script defaults to creating/using the existing `~/.claude` directory. To avoid this behaviour, create a `.claude` directory in the repo root:
+Note: The script checks the repo root for a `.claude` (or `.github`) directory first before falling back to the home directory. To force project-scoped installation, create the directory in the repo root:
 
-`mkdir <path>/<to>/<repo>/<root>/.claude`
+```bash
+mkdir .claude    # for Claude Code
+mkdir .github    # for GitHub Copilot
+```
 
 The install script runs three steps:
 
 1. **Installs Claude Code CLI** via `npm install -g @anthropic-ai/claude-code` (skipped if already present)
 2. **Fetches the profile manifest** (`profile.json`) from GitHub raw content for the requested author/profile
-3. **Maps marketplace files** into Claude Code's native config structure:
+3. **Maps marketplace files** into the CLI's native config structure:
+
+**Claude Code** (`profiles/claude/<author>/<profile>/`):
 
 | Marketplace Path | Installed To |
 |---|---|
-| `CLAUDE.md` | `~/.claude/CLAUDE.md` (appended) |
-| `commands/<name>.md` | `~/.claude/commands/<name>.md` |
-| `skills/<name>/SKILL.md` | `~/.claude/skills/<name>/SKILL.md` |
-| `agents/<name>.md` | `~/.claude/agents/<name>.md` |
-| `hooks/<name>.md` | `~/.claude/hooks/<name>.md` |
+| `CLAUDE.md` | `<claude-dir>/CLAUDE.md` (appended) |
+| `commands/<name>.md` | `<claude-dir>/commands/<name>.md` |
+| `skills/<name>/SKILL.md` | `<claude-dir>/skills/<name>/SKILL.md` |
+| `agents/<name>.md` | `<claude-dir>/agents/<name>.md` |
+| `hooks/<name>.md` | `<claude-dir>/hooks/<name>.md` |
+
+**GitHub Copilot** (`profiles/github/<author>/<profile>/`):
+
+| Marketplace Path | Installed To |
+|---|---|
+| `copilot-instructions.md` | `<github-dir>/<profile>/copilot-instructions.md` |
+| `skills/<name>/SKILL.md` | `<github-dir>/<profile>/skills/<name>/SKILL.md` |
+| `agents/<name>.md` | `<github-dir>/<profile>/agents/<name>.md` |
 
 ### Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
-| `SKIP_CLAUDE_INSTALL` | `0` | Skip Claude Code CLI install |
+| `PROVIDER` | `claude` | Provider to install (`claude` or `github`) |
+| `SKIP_CLAUDE_INSTALL` | `0` | Skip Claude Code CLI install (Claude only) |
 | `PROFILE_BRANCH` | `main` | Branch to fetch profiles from |
-| `CLAUDE_HOME` | `~/.claude` | Override the Claude config directory |
+| `CLAUDE_HOME` | `<cwd>/.claude` or `~/.claude` | Override the Claude config directory |
+| `GITHUB_HOME` | `<cwd>/.github` or `~/.github` | Override the .github directory (GitHub only) |
 
 ### Prerequisites
 
