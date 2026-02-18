@@ -5,6 +5,7 @@
 import { CLIType } from './interfaces.js';
 import { IProfileManager, IMarketplaceManager, IPublishManager } from './interfaces.js';
 import { ClaudeProviderFactory } from '../providers/claude/index.js';
+import { GitHubProviderFactory } from '../providers/github/index.js';
 
 /**
  * Provider factory that creates CLI-specific implementations
@@ -50,8 +51,7 @@ export function getProviderFactory(type: CLIType): IProviderFactory {
   if (type === 'claude') {
     return new ClaudeProviderFactory();
   } else if (type === 'github') {
-    // GitHub provider will be implemented later
-    throw new Error('GitHub provider not implemented yet');
+    return new GitHubProviderFactory();
   } else {
     throw new Error(`Unknown provider type: ${type}`);
   }

@@ -259,6 +259,8 @@ interface PRParams {
 
 interface PROptions {
   useFork?: boolean;
+  /** Base path for profile files in the repo (default: 'profiles/claude') */
+  profilesPath?: string;
 }
 
 interface PullRequest {
@@ -276,7 +278,7 @@ export async function createProfilePR(
   token: string,
   repo: string,
   { author, name, profileJson, profileFiles, indexUpdate }: PRParams,
-  { useFork = false }: PROptions = {}
+  { useFork = false, profilesPath = 'profiles/claude' }: PROptions = {}
 ): Promise<PullRequest> {
   const fetch = await getFetch();
   const targetRepo = useFork ? await ensureFork(token, repo) : repo;
@@ -314,7 +316,7 @@ export async function createProfilePR(
     encoding: 'base64'
   });
   treeEntries.push({
-    path: `profiles/${author}/${name}/profile.json`,
+    path: `${profilesPath}/${author}/${name}/profile.json`,
     mode: '100644',
     type: 'blob',
     sha: profileBlob.sha
@@ -327,7 +329,7 @@ export async function createProfilePR(
       encoding: 'base64'
     });
     treeEntries.push({
-      path: `profiles/${author}/${name}/${file.path}`,
+      path: `${profilesPath}/${author}/${name}/${file.path}`,
       mode: '100644',
       type: 'blob',
       sha: blob.sha
@@ -340,7 +342,7 @@ export async function createProfilePR(
     encoding: 'base64'
   });
   treeEntries.push({
-    path: 'index.json',
+    path: `${profilesPath}/index.json`,
     mode: '100644',
     type: 'blob',
     sha: indexBlob.sha
@@ -393,10 +395,14 @@ export async function createProfilePR(
 /**
  * Fetch the current index.json from the repo.
  */
-export async function fetchRepoIndex(token: string, repo: string): Promise<any> {
+export async function fetchRepoIndex(
+  token: string,
+  repo: string,
+  profilesPath = 'profiles/claude'
+): Promise<any> {
   const fetch = await getFetch();
 
-  const response = await fetch(`${GITHUB_API}/repos/${repo}/contents/index.json`, {
+  const response = await fetch(`${GITHUB_API}/repos/${repo}/contents/${profilesPath}/index.json`, {
     headers: authHeaders(token)
   });
 

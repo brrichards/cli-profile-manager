@@ -1,20 +1,20 @@
-# Claude Profile Manager
+# CLI Profile Manager
 
-A marketplace for saving, sharing, and loading Claude CLI configuration profiles.
+A marketplace for saving, sharing, and loading CLI configuration profiles — supports **Claude Code** and **GitHub Copilot** CLI.
 
 [![npm version](https://img.shields.io/npm/v/cli-profile-manager)](https://www.npmjs.com/package/cli-profile-manager)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
 ## What is this?
 
-Claude Profile Manager (`cpm`) lets you:
+CLI Profile Manager (`cpm`) lets you:
 
-- **Save** your `.claude` folder as a shareable profile
+- **Save** your CLI configuration as a shareable profile
 - **Load** profiles to switch between configurations
 - **Browse** a marketplace of community-created profiles
 - **Share** your profiles with others
 
-Dotfiles for Claude CLI, with a built-in plugin marketplace.
+Every command accepts a `--provider` flag to target either Claude Code or GitHub Copilot.
 
 ## Installation
 
@@ -27,44 +27,82 @@ Requires Node.js 18+.
 ## Quick Start
 
 ```bash
-# Save your current Claude config as a profile
-cpm save my-setup
+# Save your current Claude Code config as a profile
+cpm save my-setup --provider claude
 
-# List profiles in the marketplace
-cpm list
+# Save your current GitHub Copilot config as a profile
+cpm save my-copilot-setup --provider github
+
+# Browse the marketplace
+cpm list --provider claude
+cpm list --provider github
 
 # Install a profile from the marketplace
-cpm install marketplace/senior-developer
+cpm install author/senior-developer --provider claude
 
-# Load your saved profile
-cpm load my-setup
+# Load a locally saved profile
+cpm load my-setup --provider claude
 ```
 
+## Providers
+
+### Claude Code (`--provider claude`)
+
+Profiles snapshot your `.claude` folder and include:
+
+| Item | Description |
+|---|---|
+| `CLAUDE.md` | Custom instructions |
+| `commands/` | Custom slash commands |
+| `hooks/` | Event hooks |
+| `skills/` | Custom skills |
+| `mcp.json` & `mcp_servers/` | MCP server configurations |
+| `plugins/` | User-authored plugins |
+| `agents/` | Custom agents |
+
+Profiles are stored locally in `~/.cli-profiles/claude/` and installed to your `.claude` directory.
+
+### GitHub Copilot (`--provider github`)
+
+Profiles capture GitHub Copilot customizations and include:
+
+| Item | Description |
+|---|---|
+| `copilot-instructions.md` | Custom Copilot instructions |
+| `skills/` | Custom skills |
+| `agents/` | Custom agents |
+
+Profiles are stored locally in `~/.cli-profiles/github/`. When loaded, a profile is installed to `.github/<profile-name>/` in the current project directory (e.g., `.github/my-setup/`).
+
+Sensitive files (credentials, API keys) are excluded from all profiles by default.
+
 ## Commands
+
+All commands accept `-p, --provider <claude|github>`. Defaults to `claude` if omitted.
 
 ### Local Profile Management
 
 ```bash
-cpm save <name> [--description "desc"] [--tags "tag1,tag2"]
-cpm load <name> [--backup] [--force]
-cpm local
-cpm info <name>
-cpm delete <name> [--force]
+cpm save <name> [--provider <p>] [--description "desc"] [--tags "tag1,tag2"]
+cpm load <name> [--provider <p>] [--backup] [--force]
+cpm local       [--provider <p>]
+cpm info <name> [--provider <p>]
+cpm delete <name> [--provider <p>] [--force]
 ```
 
 ### Marketplace
 
 ```bash
-cpm list [--category <cat>] [--refresh]
-cpm search <query>
-cpm install author/profile-name [--backup] [--force]
-cpm info author/profile-name
+cpm list   [--provider <p>] [--category <cat>] [--refresh]
+cpm search <query> [--provider <p>]
+cpm install author/profile-name [--provider <p>] [--backup] [--force]
+cpm info   author/profile-name [--provider <p>]
 ```
 
 ### Publishing
 
 ```bash
-cpm publish <name>
+cpm publish <name> [--provider <p>]
 cpm repo owner/repo-name
 ```
 
@@ -74,75 +112,110 @@ cpm repo owner/repo-name
 cpm config
 ```
 
-## What's in a Profile?
-
-A profile snapshots your `.claude` folder:
-
-- `CLAUDE.md` - Custom instructions
-- `commands/` - Custom slash commands
-- `hooks/` - Event hooks
-- `skills/` - Custom skills
-- `mcp.json` & `mcp_servers/` - MCP server configurations
-- `plugins/` - User-authored plugins
-- `agents/` - Custom agents
-
-Sensitive files (credentials, API keys) are excluded by default.
-
 ## Example Workflows
 
-### Switch Between Work Personas
+### Switch Between Claude Code Personas
 
 ```bash
-# save current claude config
-cpm save work-reviewer --tags "work,code-review"
-# ... Modify claude config ...
-cpm save docs-writer --tags "work,documentation"
+cpm save work-reviewer --provider claude --tags "work,code-review"
+cpm save docs-writer   --provider claude --tags "work,documentation"
 
-cpm load work-reviewer
+cpm load work-reviewer --provider claude
 # ... do code reviews ...
-cpm load docs-writer
+cpm load docs-writer --provider claude
 # ... write documentation ...
 ```
 
-### Share Team Configuration
+### Manage GitHub Copilot Profiles Per Project
 
 ```bash
-cpm save team-standards --description "Our team's Claude configuration"
-cpm publish team-standards
+# Snapshot your current .github/ copilot config
+cpm save frontend-team --provider github --description "Frontend team Copilot setup"
 
-# Team members install it
-cpm install yourname/team-standards
+# Install the profile into this project
+cpm load frontend-team --provider github
+# → installs to .github/frontend-team/
+
+# Share it with the team
+cpm publish frontend-team --provider github
 ```
 
-### Try Community Profiles
+### Share Team Configurations
 
 ```bash
-cpm list
-cpm search ts
-cpm install marketplace/ts-expert --backup
+# Claude Code
+cpm save team-standards --provider claude --description "Our team's Claude configuration"
+cpm publish team-standards --provider claude
 
-# Restore if needed
-cpm load .claude-backup-*
+# GitHub Copilot
+cpm save team-copilot --provider github --description "Our team's Copilot setup"
+cpm publish team-copilot --provider github
+
+# Team members install it
+cpm install yourname/team-standards --provider claude
+cpm install yourname/team-copilot --provider github
 ```
 
 ## Profile Storage
 
 ```
-~/.claude-profiles/
+~/.cli-profiles/
 ├── config.json
-├── my-setup/
-│   ├── profile.json
-│   ├── CLAUDE.md
-│   ├── commands/
-│   └── hooks/
-└── .cache/
-    └── marketplace-index.json
+├── claude/                        # Claude Code profiles
+│   ├── my-setup/
+│   │   ├── profile.json
+│   │   ├── CLAUDE.md
+│   │   ├── commands/
+│   │   └── hooks/
+│   └── .cache/
+│       └── claude-marketplace-index.json
+└── github/                        # GitHub Copilot profiles
+    ├── my-copilot-setup/
+    │   ├── profile.json
+    │   ├── copilot-instructions.md
+    │   ├── skills/
+    │   └── agents/
+    └── .cache/
+        └── github-marketplace-index.json
+```
+
+When a GitHub Copilot profile is loaded into a project:
+
+```
+<project-root>/
+└── .github/
+    └── my-copilot-setup/          # installed profile
+        ├── copilot-instructions.md
+        ├── skills/
+        └── agents/
+```
+
+## Marketplace Repository Structure
+
+```
+cli-profile-manager/
+├── profiles/
+│   ├── claude/                    # Claude Code marketplace profiles
+│   │   ├── index.json
+│   │   └── author/profile-name/
+│   │       ├── profile.json
+│   │       └── ...
+│   └── github/                    # GitHub Copilot marketplace profiles
+│       ├── index.json
+│       └── author/profile-name/
+│           ├── profile.json
+│           ├── copilot-instructions.md
+│           ├── skills/
+│           └── agents/
+└── README.md
 ```
 
 ## Contributing Profiles
 
-1. Save your profile: `cpm save my-awesome-profile`
-2. Publish it: `cpm publish my-awesome-profile`
+1. Save your profile: `cpm save my-awesome-profile --provider <claude|github>`
+2. Publish it: `cpm publish my-awesome-profile --provider <claude|github>`
+
+A pull request will be opened automatically against the marketplace repository for review.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
@@ -151,8 +224,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 Host your own marketplace (e.g., for your company):
 
 1. Fork this repository
-2. Add profiles to `profiles/`
-3. Update `index.json`
+2. Add profiles to `profiles/claude/` and/or `profiles/github/`
+3. Update the relevant `index.json`
 4. Point users to your repo: `cpm repo your-org/your-marketplace`
 
 ## Auto-Install in Codespaces / Devcontainers
@@ -223,24 +296,20 @@ The Codespace's repo-scoped token cannot perform any of these operations on a di
 
 This design also benefits users outside Codespaces — no need to configure SSH keys or manually create PATs. The device flow handles everything.
 
-## Repository Structure
+## Source Structure
 
 ```
 cli-profile-manager/
-├── src/                    # NPM package source
-│   ├── cli.js             # CLI entry point
-│   ├── commands/          # Command implementations
-│   └── utils/             # Utilities
-├── scripts/               # Automation scripts
-│   └── install-profile.mjs  # Codespace/devcontainer auto-installer
-├── profiles/              # Marketplace profiles
-│   └── author/
-│       └── profile-name/
-│           ├── profile.json
-│           └── ...
-├── index.json             # Marketplace index
-├── package.json
-└── README.md
+├── src/
+│   ├── cli.ts                     # CLI entry point
+│   ├── commands/                  # Thin command wrappers
+│   ├── types/                     # Interfaces and factory
+│   ├── providers/
+│   │   ├── claude/                # Claude Code provider
+│   │   └── github/                # GitHub Copilot provider
+│   └── utils/                     # Shared utilities (config, auth)
+├── dist/                          # Compiled output
+└── profiles/                      # Marketplace profiles
 ```
 
 ## License

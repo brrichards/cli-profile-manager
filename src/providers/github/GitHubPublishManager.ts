@@ -1,6 +1,6 @@
 /**
- * Claude Code CLI Publish Manager
- * Implements IPublishManager for Claude Code publishing operations
+ * GitHub Copilot CLI Publish Manager
+ * Implements IPublishManager for GitHub Copilot publishing operations
  */
 
 import chalk from 'chalk';
@@ -19,16 +19,16 @@ import {
   authenticateWithDeviceFlow
 } from '../../utils/auth.js';
 
-const PROFILES_PATH = 'profiles/claude';
+const PROFILES_PATH = 'profiles/github';
 
-export class ClaudePublishManager implements IPublishManager {
+export class GitHubPublishManager implements IPublishManager {
   async publishProfile(name: string, _options: PublishProfileOptions): Promise<void> {
     const config = await getConfig();
-    const profilePath = join(config.claudeProfilesDir, name);
+    const profilePath = join(config.githubProfilesDir, name);
 
     if (!existsSync(profilePath)) {
       console.log(chalk.red(`Profile not found: ${name}`));
-      console.log(chalk.dim('  List local profiles with: cpm local --provider claude'));
+      console.log(chalk.dim('  List local profiles with: cpm local --provider github'));
       process.exit(1);
     }
 
@@ -42,8 +42,8 @@ export class ClaudePublishManager implements IPublishManager {
     const contents = metadata.contents || {};
     const hasContent = Object.values(contents).some(items => items && items.length > 0);
     if (!hasContent) {
-      console.log(chalk.red('Profile has no functional content (commands, hooks, skills, etc.)'));
-      console.log(chalk.dim('  Profiles must contain at least one functional customization.'));
+      console.log(chalk.red('Profile has no functional content (skills, agents, or copilot-instructions.md).'));
+      console.log(chalk.dim('  Profiles must contain at least one customization.'));
       process.exit(1);
     }
 
@@ -82,13 +82,9 @@ export class ClaudePublishManager implements IPublishManager {
     if (metadata.description) {
       console.log(chalk.cyan('  Desc:    ') + metadata.description);
     }
-
     for (const [category, items] of Object.entries(contents)) {
       if (items && items.length > 0) {
-        const display = category === 'commands'
-          ? items.map(i => `/${i}`).join(', ')
-          : items.join(', ');
-        console.log(chalk.cyan(`  ${category}: `) + chalk.dim(display));
+        console.log(chalk.cyan(`  ${category}: `) + chalk.dim(items.join(', ')));
       }
     }
     console.log('');
@@ -108,10 +104,6 @@ export class ClaudePublishManager implements IPublishManager {
     await this.attemptPublish(token, config, { author, name, metadata, profilePath, useFork });
   }
 
-  /**
-   * Attempt to publish. On 403 (insufficient token scope), fall back to
-   * OAuth device flow and retry with a fork-based PR.
-   */
   private async attemptPublish(token: string, config: any, params: {
     author: string;
     name: string;
@@ -137,8 +129,8 @@ export class ClaudePublishManager implements IPublishManager {
         console.log('');
 
         const deviceToken = await authenticateWithDeviceFlow();
-
         const retrySpinner = ora('Retrying with fork-based PR...').start();
+
         try {
           const pr = await this.doPublish(deviceToken, config, { author, name, metadata, profilePath, useFork: true });
           retrySpinner.succeed(chalk.green('Pull request created!'));
@@ -158,9 +150,6 @@ export class ClaudePublishManager implements IPublishManager {
     }
   }
 
-  /**
-   * Core publish logic: fetch index, prepare metadata, create PR.
-   */
   private async doPublish(token: string, config: any, params: {
     author: string;
     name: string;
@@ -207,23 +196,17 @@ export class ClaudePublishManager implements IPublishManager {
     return pr;
   }
 
-  /**
-   * Read all content files from a profile directory (excluding profile.json).
-   * Returns an array of { path, content } pairs with forward-slash paths.
-   */
   private readProfileFiles(profileDir: string): Array<{ path: string; content: string }> {
     const files: Array<{ path: string; content: string }> = [];
 
     const walk = (dir: string, relativePath = '') => {
-      const entries = readdirSync(dir);
-      for (const entry of entries) {
+      for (const entry of readdirSync(dir)) {
         if (!relativePath && entry === 'profile.json') continue;
 
         const fullPath = join(dir, entry);
         const relPath = relativePath ? `${relativePath}/${entry}` : entry;
-        const stat = statSync(fullPath);
 
-        if (stat.isDirectory()) {
+        if (statSync(fullPath).isDirectory()) {
           walk(fullPath, relPath);
         } else {
           files.push({ path: relPath, content: readFileSync(fullPath, 'utf-8') });
@@ -245,7 +228,6 @@ export class ClaudePublishManager implements IPublishManager {
 
     try {
       const fetch = (await import('node-fetch')).default;
-
       const response = await fetch(
         `https://raw.githubusercontent.com/${repository}/main/index.json`
       );
