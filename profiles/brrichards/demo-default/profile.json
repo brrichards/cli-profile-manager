@@ -1,0 +1,46 @@
+{
+  "name": "demo-default",
+  "version": "1.0.0",
+  "description": "",
+  "tags": [],
+  "createdAt": "2026-02-18T16:38:00.194Z",
+  "claudeVersion": "2.1.45 (Claude Code)",
+  "platform": "linux",
+  "includesSecrets": false,
+  "files": [
+    "CLAUDE.md",
+    "agents/code-reviewer.md",
+    "commands/deps.md",
+    "commands/perf.md",
+    "commands/scaffold.md",
+    "hooks/pre-commit.md",
+    "plugins/known_marketplaces.json",
+    "skills/debug/SKILL.md",
+    "skills/refactor/SKILL.md"
+  ],
+  "contents": {
+    "instructions": [
+      "CLAUDE.md"
+    ],
+    "agents": [
+      "code-reviewer"
+    ],
+    "commands": [
+      "deps",
+      "perf",
+      "scaffold"
+    ],
+    "hooks": [
+      "pre-commit"
+    ],
+    "plugins": [
+      "known_marketplaces"
+    ],
+    "skills": [
+      "debug",
+      "refactor"
+    ]
+  },
+  "author": "brrichards",
+  "publishedAt": "2026-02-18T16:47:54.160Z"
+}
