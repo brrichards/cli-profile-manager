@@ -2,9 +2,9 @@
  * Factory interface for creating CLI-specific manager instances
  */
 
-import { CLIType } from './interfaces';
-import { IProfileManager, IMarketplaceManager, IPublishManager } from './interfaces';
-import { ClaudeProviderFactory } from '../providers/claude';
+import { CLIType } from './interfaces.js';
+import { IProfileManager, IMarketplaceManager, IPublishManager } from './interfaces.js';
+import { ClaudeProviderFactory } from '../providers/claude/index.js';
 
 /**
  * Provider factory that creates CLI-specific implementations

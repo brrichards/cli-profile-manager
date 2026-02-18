@@ -8,8 +8,8 @@ import type {
   SaveProfileOptions,
   LoadProfileOptions,
   DeleteProfileOptions
-} from '../types';
-import { getProviderFactory } from '../types/factory';
+} from '../types/index.js';
+import { getProviderFactory } from '../types/factory.js';
 
 export async function saveProfile(
   name: string,

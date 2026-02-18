@@ -4,10 +4,10 @@
  */
 
 import { execSync } from 'child_process';
-import type { CLIType, IProviderFactory, IProfileManager, IMarketplaceManager, IPublishManager } from '../../types';
-import { ClaudeProfileManager } from './ClaudeProfileManager';
-import { ClaudeMarketplaceManager } from './ClaudeMarketplaceManager';
-import { ClaudePublishManager } from './ClaudePublishManager';
+import type { CLIType, IProviderFactory, IProfileManager, IMarketplaceManager, IPublishManager } from '../../types/index.js';
+import { ClaudeProfileManager } from './ClaudeProfileManager.js';
+import { ClaudeMarketplaceManager } from './ClaudeMarketplaceManager.js';
+import { ClaudePublishManager } from './ClaudePublishManager.js';
 
 export class ClaudeProviderFactory implements IProviderFactory {
   getType(): CLIType {

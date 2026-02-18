@@ -2,25 +2,25 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import type { CLIType } from './types';
+import type { CLIType } from './types/index.js';
 import {
   saveProfile,
   loadProfile,
   listLocalProfiles,
   deleteLocalProfile,
   showProfileInfo
-} from './commands/profile';
+} from './commands/profile.js';
 import {
   listMarketplace,
   searchMarketplace,
   installFromMarketplace,
   showMarketplaceInfo
-} from './commands/marketplace';
+} from './commands/marketplace.js';
 import {
   publishProfile,
   setRepository
-} from './commands/publish';
-import { getConfig } from './utils/config';
+} from './commands/publish.js';
+import { getConfig } from './utils/config.js';
 
 const VERSION = '0.1.0';
 

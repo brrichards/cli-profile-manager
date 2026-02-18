@@ -13,15 +13,15 @@ import type {
   SaveProfileOptions,
   LoadProfileOptions,
   DeleteProfileOptions
-} from '../../types';
-import { getConfig, configDirExists } from '../../utils/config';
+} from '../../types/index.js';
+import { getConfig, configDirExists } from '../../utils/config.js';
 import {
   createSnapshot,
   extractSnapshot,
   readProfileMetadata,
   deriveContents
-} from './snapshot';
-import { CATEGORY_LABELS } from './constants';
+} from './snapshot.js';
+import { CATEGORY_LABELS } from './constants.js';
 
 export class ClaudeProfileManager implements IProfileManager {
   /**

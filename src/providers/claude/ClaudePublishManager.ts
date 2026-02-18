@@ -8,16 +8,16 @@ import ora from 'ora';
 import inquirer from 'inquirer';
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import type { IPublishManager, PublishProfileOptions } from '../../types';
-import { getConfig, updateConfig } from '../../utils/config';
-import { readProfileMetadata } from './snapshot';
+import type { IPublishManager, PublishProfileOptions } from '../../types/index.js';
+import { getConfig, updateConfig } from '../../utils/config.js';
+import { readProfileMetadata } from './snapshot.js';
 import {
   getGitHubToken,
   getGitHubUsername,
   createProfilePR,
   fetchRepoIndex,
   authenticateWithDeviceFlow
-} from '../../utils/auth';
+} from '../../utils/auth.js';
 
 export class ClaudePublishManager implements IPublishManager {
   async publishProfile(name: string, _options: PublishProfileOptions): Promise<void> {

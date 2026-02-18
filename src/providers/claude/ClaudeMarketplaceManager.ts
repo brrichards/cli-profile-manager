@@ -9,10 +9,10 @@ import inquirer from 'inquirer';
 import fetch from 'node-fetch';
 import { existsSync, writeFileSync, readFileSync, mkdirSync, cpSync } from 'fs';
 import { join, dirname } from 'path';
-import type { IMarketplaceManager, ListMarketplaceOptions, InstallMarketplaceOptions } from '../../types';
-import { getConfig, configDirExists } from '../../utils/config';
-import { cleanProfileContent } from './snapshot';
-import { CATEGORY_LABELS } from './constants';
+import type { IMarketplaceManager, ListMarketplaceOptions, InstallMarketplaceOptions } from '../../types/index.js';
+import { getConfig, configDirExists } from '../../utils/config.js';
+import { cleanProfileContent } from './snapshot.js';
+import { CATEGORY_LABELS } from './constants.js';
 
 const INDEX_CACHE_TIME = 60 * 60 * 1000; // 1 hour
 

@@ -7,8 +7,8 @@ import type {
   CLIType,
   ListMarketplaceOptions,
   InstallMarketplaceOptions
-} from '../types';
-import { getProviderFactory } from '../types/factory';
+} from '../types/index.js';
+import { getProviderFactory } from '../types/factory.js';
 
 export async function listMarketplace(
   provider: CLIType,

@@ -3,8 +3,8 @@
  * Delegates to provider-specific implementations
  */
 
-import type { CLIType, PublishProfileOptions } from '../types';
-import { getProviderFactory } from '../types/factory';
+import type { CLIType, PublishProfileOptions } from '../types/index.js';
+import { getProviderFactory } from '../types/factory.js';
 
 export async function publishProfile(
   name: string,

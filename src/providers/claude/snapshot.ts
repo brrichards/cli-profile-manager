@@ -6,8 +6,8 @@
 import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, rmSync, cpSync } from 'fs';
 import { join, dirname, sep } from 'path';
 import { execSync } from 'child_process';
-import type { ProfileMetadata } from '../../types';
-import { SAFE_INCLUDES, CLAUDE_EXCLUDES, PLUGIN_INFRA_DIRS } from './constants';
+import type { ProfileMetadata } from '../../types/index.js';
+import { SAFE_INCLUDES, CLAUDE_EXCLUDES, PLUGIN_INFRA_DIRS } from './constants.js';
 
 /**
  * Get list of files to archive (using allowlist approach)

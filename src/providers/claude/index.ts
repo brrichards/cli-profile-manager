@@ -3,9 +3,9 @@
  * Export all Claude-specific implementations
  */
 
-export * from './ClaudeProviderFactory';
-export * from './ClaudeProfileManager';
-export * from './ClaudeMarketplaceManager';
-export * from './ClaudePublishManager';
-export * from './constants';
-export * from './snapshot';
+export * from './ClaudeProviderFactory.js';
+export * from './ClaudeProfileManager.js';
+export * from './ClaudeMarketplaceManager.js';
+export * from './ClaudePublishManager.js';
+export * from './constants.js';
+export * from './snapshot.js';

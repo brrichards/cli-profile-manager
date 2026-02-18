@@ -1,7 +1,7 @@
 import { homedir } from 'os';
 import { join } from 'path';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import type { CLIType } from '../types';
+import type { CLIType } from '../types/index.js';
 
 const HOME = homedir();
 const BASE_DIR = join(HOME, '.cli-profiles');

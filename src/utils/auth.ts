@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import ora from 'ora';
-import type { ProfileMetadata } from '../types';
+import type { ProfileMetadata } from '../types/index.js';
 
 const GITHUB_API = 'https://api.github.com';
 const HEADERS_BASE = {
