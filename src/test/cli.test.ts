@@ -2,8 +2,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { execSync } from 'child_process';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 
-const CLI = join(import.meta.dirname, '..', 'src', 'cli.js');
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const CLI = join(__dirname, '..', 'cli.js');
 
 describe('CLI smoke test', () => {
   it('--help exits 0 and shows expected commands', () => {

@@ -1,10 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { mkdirSync, writeFileSync, rmSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { deriveContents, getFilesToArchive } from '../providers/claude/snapshot.js';
 
 describe('deriveContents', () => {
-  it('categorizes files into correct content buckets', async () => {
-    const { deriveContents } = await import('../src/utils/snapshot.js');
-
+  it('categorizes files into correct content buckets', () => {
     const files = [
       'CLAUDE.md',
       'commands/review.md',
@@ -23,21 +25,14 @@ describe('deriveContents', () => {
     assert.deepStrictEqual(contents.skills, ['debugging']);
   });
 
-  it('returns empty object for empty file list', async () => {
-    const { deriveContents } = await import('../src/utils/snapshot.js');
+  it('returns empty object for empty file list', () => {
     const contents = deriveContents([]);
     assert.deepStrictEqual(contents, {});
   });
 });
 
 describe('getFilesToArchive', () => {
-  it('only includes files matching the allowlist', async () => {
-    const { getFilesToArchive } = await import('../src/utils/snapshot.js');
-    const { mkdirSync, writeFileSync, rmSync } = await import('fs');
-    const { join } = await import('path');
-    const { tmpdir } = await import('os');
-
-    // Create a temp .claude-like directory
+  it('only includes files matching the allowlist', () => {
     const testDir = join(tmpdir(), `cpm-test-${Date.now()}`);
     mkdirSync(join(testDir, 'commands'), { recursive: true });
     mkdirSync(join(testDir, 'secrets'), { recursive: true });

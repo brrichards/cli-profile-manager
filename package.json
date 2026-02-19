@@ -1,19 +1,24 @@
 {
   "name": "cli-profile-manager",
   "version": "0.1.0",
-  "description": "Save, share, and load Claude CLI profiles - a marketplace for Claude configurations",
+  "description": "Save, share, and load CLI profiles - a marketplace for Claude Code and GitHub CLI configurations",
   "type": "module",
-  "main": "src/cli.js",
+  "main": "dist/cli.js",
   "bin": {
-    "cpm": "src/cli.js",
-    "claude-profiles": "src/cli.js"
+    "cpm": "dist/cli.js",
+    "claude-profiles": "dist/cli.js"
   },
   "scripts": {
-    "test": "node --test 'test/**/*.test.js'"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && node --test dist/test/*.test.js"
   },
   "keywords": [
     "claude",
     "anthropic",
+    "github",
+    "copilot",
     "cli",
     "profiles",
     "configuration",
@@ -34,5 +39,10 @@
     "inquirer": "^9.2.12",
     "node-fetch": "^3.3.2",
     "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
   }
 }

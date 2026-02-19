@@ -3,8 +3,8 @@ name: Validate Profile Submission
 on:
   pull_request_target:
     paths:
-      - 'profiles/**'
-      - 'index.json'
+      - 'profiles/claude/**'
+      - 'profiles/github/**'
 
 permissions:
   pull-requests: write
@@ -33,6 +33,25 @@ jobs:
             const errors = [];
             const warnings = [];
 
+            // Allowed file prefixes per provider
+            const ALLOWED_PREFIXES = {
+              claude: [
+                'CLAUDE.md',
+                'commands/',
+                'skills/',
+                'hooks/',
+                'plugins/',
+                'mcp.json',
+                'mcp_servers/',
+                'agents/'
+              ],
+              github: [
+                'copilot-instructions.md',
+                'skills/',
+                'agents/'
+              ]
+            };
+
             // Get changed files in this PR
             const { data: files } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
@@ -42,12 +61,14 @@ jobs:
 
             const changedPaths = files.map(f => f.filename);
 
-            // Find profile directories being added/modified
-            const profilePaths = new Set();
+            // Find profile directories being added/modified.
+            // Path structure: profiles/<provider>/<author>/<name>/...
+            const profilePaths = new Map(); // profileDir -> provider
             for (const p of changedPaths) {
-              const match = p.match(/^profiles\/([^/]+)\/([^/]+)\//);
+              const match = p.match(/^profiles\/(claude|github)\/([^/]+)\/([^/]+)\//);
               if (match) {
-                profilePaths.add(`profiles/${match[1]}/${match[2]}`);
+                const profileDir = `profiles/${match[1]}/${match[2]}/${match[3]}`;
+                profilePaths.set(profileDir, match[1]);
               }
             }
 
@@ -56,19 +77,8 @@ jobs:
               return;
             }
 
-            // Allowed file prefixes inside a profile directory (besides profile.json)
-            const allowedPrefixes = [
-              'CLAUDE.md',
-              'commands/',
-              'skills/',
-              'hooks/',
-              'plugins/',
-              'mcp.json',
-              'mcp_servers/',
-              'agents/'
-            ];
-
-            for (const profileDir of profilePaths) {
+            for (const [profileDir, provider] of profilePaths) {
+              const allowedPrefixes = ALLOWED_PREFIXES[provider];
               const metadataPath = `${profileDir}/profile.json`;
 
               // Check profile.json exists
@@ -87,8 +97,8 @@ jobs:
               }
 
               // Required fields
-              if (!metadata.name) errors.push(`${metadataPath}: missing "name" field`);
-              if (!metadata.author) errors.push(`${metadataPath}: missing "author" field`);
+              if (!metadata.name)    errors.push(`${metadataPath}: missing "name" field`);
+              if (!metadata.author)  errors.push(`${metadataPath}: missing "author" field`);
               if (!metadata.version) errors.push(`${metadataPath}: missing "version" field`);
 
               // Name format
@@ -101,16 +111,19 @@ jobs:
                 errors.push(`${metadataPath}: invalid version "${metadata.version}" (use semver: x.y.z)`);
               }
 
-              // Contents check
+              // Contents check — must have at least one functional item
               const contents = metadata.contents || {};
               const hasContent = Object.values(contents).some(
                 items => Array.isArray(items) && items.length > 0
               );
               if (!hasContent) {
-                errors.push(`${metadataPath}: profile has no functional content (commands, hooks, skills, etc.)`);
+                const expected = provider === 'github'
+                  ? 'skills, agents, or copilot-instructions.md'
+                  : 'commands, hooks, skills, agents, etc.';
+                errors.push(`${metadataPath}: profile has no functional content (${expected})`);
               }
 
-              // Validate actual files in the profile directory against the allowlist
+              // Validate actual changed files against the provider allowlist
               const profileFiles = changedPaths
                 .filter(p => p.startsWith(profileDir + '/') && p !== metadataPath)
                 .map(p => p.slice(profileDir.length + 1));
@@ -120,11 +133,11 @@ jobs:
                   prefix => file === prefix || file.startsWith(prefix)
                 );
                 if (!allowed) {
-                  errors.push(`${profileDir}/${file}: file not in allowlist (only CLAUDE.md, commands/, skills/, hooks/, plugins/, mcp.json, mcp_servers/, agents/ are allowed)`);
+                  errors.push(`${profileDir}/${file}: file not allowed for ${provider} profiles (allowed: ${allowedPrefixes.join(', ')})`);
                 }
               }
 
-              // Validate files list in metadata matches actual files
+              // Validate files listed in metadata actually exist
               if (metadata.files && metadata.files.length > 0) {
                 for (const file of metadata.files) {
                   const normalized = file.replace(/\\/g, '/');
@@ -134,7 +147,6 @@ jobs:
                   if (!allowed) {
                     errors.push(`${metadataPath}: disallowed file path "${file}" in files list`);
                   }
-                  // Check the file actually exists in the profile directory
                   const filePath = `${profileDir}/${normalized}`;
                   if (!fs.existsSync(filePath)) {
                     errors.push(`${metadataPath}: file "${file}" listed in metadata but not found in profile directory`);
@@ -143,24 +155,27 @@ jobs:
               }
             }
 
-            // Validate index.json if changed
-            if (changedPaths.includes('index.json')) {
+            // Validate index.json files if changed
+            for (const provider of ['claude', 'github']) {
+              const indexPath = `profiles/${provider}/index.json`;
+              if (!changedPaths.includes(indexPath)) continue;
+
               try {
-                const index = JSON.parse(fs.readFileSync('index.json', 'utf-8'));
+                const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
                 if (!Array.isArray(index.profiles)) {
-                  errors.push('index.json: "profiles" must be an array');
+                  errors.push(`${indexPath}: "profiles" must be an array`);
                 } else {
                   for (const profile of index.profiles) {
                     if (!profile.name || !profile.author) {
-                      errors.push(`index.json: profile entry missing name or author`);
+                      errors.push(`${indexPath}: profile entry missing name or author`);
                     }
                     if (!profile.contents || Object.keys(profile.contents).length === 0) {
-                      warnings.push(`index.json: profile ${profile.author}/${profile.name} has no contents field`);
+                      warnings.push(`${indexPath}: profile ${profile.author}/${profile.name} has no contents field`);
                     }
                   }
                 }
               } catch (e) {
-                errors.push(`index.json: invalid JSON - ${e.message}`);
+                errors.push(`${indexPath}: invalid JSON - ${e.message}`);
               }
             }
 

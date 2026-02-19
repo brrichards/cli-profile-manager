@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import ora from 'ora';
+import type { ProfileMetadata } from '../types/index.js';
 
 const GITHUB_API = 'https://api.github.com';
 const HEADERS_BASE = {
@@ -17,7 +18,7 @@ const HEADERS_BASE = {
 // The client_id is public and safe to ship in source -- no secret needed.
 const OAUTH_CLIENT_ID = 'Ov23lizYjvZYdq6OWvvb';
 
-function authHeaders(token) {
+function authHeaders(token: string): Record<string, string> {
   return { ...HEADERS_BASE, 'Authorization': `Bearer ${token}` };
 }
 
@@ -26,12 +27,16 @@ async function getFetch() {
   return fetch;
 }
 
+interface GitCredentials {
+  [key: string]: string;
+}
+
 /**
  * Retrieve a GitHub token from Git Credential Manager.
  * Works cross-platform (Windows, macOS, Linux) -- delegates to
  * whatever credential helper is configured for git.
  */
-export function getGitHubToken() {
+export function getGitHubToken(): string | null {
   try {
     const input = 'protocol=https\nhost=github.com\n\n';
     const output = execSync('git credential fill', {
@@ -41,7 +46,7 @@ export function getGitHubToken() {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
-    const creds = {};
+    const creds: GitCredentials = {};
     for (const line of output.trim().split('\n')) {
       const [key, ...rest] = line.split('=');
       creds[key] = rest.join('=');
@@ -53,12 +58,26 @@ export function getGitHubToken() {
   }
 }
 
+interface DeviceCodeResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  interval?: number;
+  expires_in?: number;
+}
+
+interface TokenResponse {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+}
+
 /**
  * Authenticate via the GitHub OAuth device flow.
  * Opens a browser prompt for the user to authorize -- no PAT needed.
  * Returns a short-lived access token.
  */
-export async function authenticateWithDeviceFlow() {
+export async function authenticateWithDeviceFlow(): Promise<string> {
   const fetch = await getFetch();
 
   // Step 1: Request a device code
@@ -78,7 +97,8 @@ export async function authenticateWithDeviceFlow() {
     throw new Error(`Device flow initiation failed: ${codeResponse.status}`);
   }
 
-  const { device_code, user_code, verification_uri, interval, expires_in } = await codeResponse.json();
+  // Not the best typecast but it works for a POC.
+  const { device_code, user_code, verification_uri, interval, expires_in } = await codeResponse.json() as DeviceCodeResponse;
 
   // Step 2: Show the user the code
   console.log('');
@@ -107,7 +127,7 @@ export async function authenticateWithDeviceFlow() {
       })
     });
 
-    const data = await tokenResponse.json();
+    const data = await tokenResponse.json() as TokenResponse;
 
     if (data.access_token) {
       spinner.succeed(chalk.green('Authorized.'));
@@ -141,10 +161,14 @@ export async function authenticateWithDeviceFlow() {
   throw new Error('Device flow timed out.');
 }
 
+interface GitHubUser {
+  login: string;
+}
+
 /**
  * Get the GitHub username associated with a token.
  */
-export async function getGitHubUsername(token) {
+export async function getGitHubUsername(token: string): Promise<string> {
   const fetch = await getFetch();
 
   const response = await fetch(`${GITHUB_API}/user`, {
@@ -158,20 +182,25 @@ export async function getGitHubUsername(token) {
     throw new Error(`GitHub API error: ${response.status}`);
   }
 
-  const user = await response.json();
+  const user = await response.json() as GitHubUser;
   return user.login;
+}
+
+interface ForkResponse {
+  full_name: string;
+  fork: boolean;
 }
 
 /**
  * Ensure a fork of the marketplace repo exists under the authenticated user.
  * Returns the full name of the fork (e.g., "username/cli-profile-manager").
  */
-async function ensureFork(token, upstreamRepo) {
+async function ensureFork(token: string, upstreamRepo: string): Promise<string> {
   const fetch = await getFetch();
   const headers = { ...authHeaders(token), 'Content-Type': 'application/json' };
 
   const userResponse = await fetch(`${GITHUB_API}/user`, { headers: authHeaders(token) });
-  const user = await userResponse.json();
+  const user = await userResponse.json() as GitHubUser;
   const repoName = upstreamRepo.split('/')[1];
   const forkFullName = `${user.login}/${repoName}`;
 
@@ -181,7 +210,7 @@ async function ensureFork(token, upstreamRepo) {
   });
 
   if (checkResponse.ok) {
-    const fork = await checkResponse.json();
+    const fork = await checkResponse.json() as ForkResponse;
     if (fork.fork) {
       return forkFullName;
     }
@@ -195,11 +224,11 @@ async function ensureFork(token, upstreamRepo) {
   });
 
   if (!forkResponse.ok) {
-    const err = await forkResponse.json().catch(() => ({}));
+    const err = await forkResponse.json().catch(() => ({})) as { message?: string };
     throw new Error(`Failed to fork ${upstreamRepo}: ${err.message || forkResponse.status}`);
   }
 
-  const forkData = await forkResponse.json();
+  const forkData = await forkResponse.json() as ForkResponse;
 
   // Wait for the fork to be ready (GitHub creates forks asynchronously)
   for (let i = 0; i < 30; i++) {
@@ -215,18 +244,47 @@ async function ensureFork(token, upstreamRepo) {
   throw new Error('Fork creation timed out. Please try again.');
 }
 
+interface ProfileFile {
+  path: string;
+  content: string;
+}
+
+interface PRParams {
+  author: string;
+  name: string;
+  profileJson: string;
+  profileFiles: ProfileFile[];
+  indexUpdate: string;
+}
+
+interface PROptions {
+  useFork?: boolean;
+  /** Base path for profile files in the repo (default: 'profiles/claude') */
+  profilesPath?: string;
+}
+
+interface PullRequest {
+  html_url: string;
+  [key: string]: any;
+}
+
 /**
  * Create a pull request on the marketplace repo with profile files.
  *
  * Uses the Git Data API (blobs -> tree -> commit -> ref -> PR).
  * If `forkRepo` is provided, writes to the fork and opens a cross-repo PR.
  */
-export async function createProfilePR(token, repo, { author, name, profileJson, profileFiles, indexUpdate }, { useFork = false } = {}) {
+export async function createProfilePR(
+  token: string,
+  repo: string,
+  { author, name, profileJson, profileFiles, indexUpdate }: PRParams,
+  { useFork = false, profilesPath = 'profiles/claude' }: PROptions = {}
+): Promise<PullRequest> {
   const fetch = await getFetch();
   const targetRepo = useFork ? await ensureFork(token, repo) : repo;
   const headers = { ...authHeaders(token), 'Content-Type': 'application/json' };
 
-  async function api(method, path, body, apiRepo = targetRepo) {
+  async function api(method: string, path: string, body?: any, apiRepo: string = targetRepo): Promise<any> {
     const response = await fetch(`${GITHUB_API}/repos/${apiRepo}${path}`, {
       method,
       headers,
@@ -234,7 +292,7 @@ export async function createProfilePR(token, repo, { author, name, profileJson, 
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json().catch(() => ({})) as { message?: string };
       throw new Error(`GitHub API ${method} ${path} failed (${response.status}): ${errorData.message || 'Unknown error'}`);
     }
 
@@ -250,7 +308,7 @@ export async function createProfilePR(token, repo, { author, name, profileJson, 
   const baseTreeSha = baseCommit.tree.sha;
 
   // 3. Create blobs for each profile file
-  const treeEntries = [];
+  const treeEntries: any[] = [];
 
   // profile.json blob
   const profileBlob = await api('POST', '/git/blobs', {
@@ -258,7 +316,7 @@ export async function createProfilePR(token, repo, { author, name, profileJson, 
     encoding: 'base64'
   });
   treeEntries.push({
-    path: `profiles/${author}/${name}/profile.json`,
+    path: `${profilesPath}/${author}/${name}/profile.json`,
     mode: '100644',
     type: 'blob',
     sha: profileBlob.sha
@@ -271,7 +329,7 @@ export async function createProfilePR(token, repo, { author, name, profileJson, 
       encoding: 'base64'
     });
     treeEntries.push({
-      path: `profiles/${author}/${name}/${file.path}`,
+      path: `${profilesPath}/${author}/${name}/${file.path}`,
       mode: '100644',
       type: 'blob',
       sha: blob.sha
@@ -284,7 +342,7 @@ export async function createProfilePR(token, repo, { author, name, profileJson, 
     encoding: 'base64'
   });
   treeEntries.push({
-    path: 'index.json',
+    path: `${profilesPath}/index.json`,
     mode: '100644',
     type: 'blob',
     sha: indexBlob.sha
@@ -310,7 +368,7 @@ export async function createProfilePR(token, repo, { author, name, profileJson, 
       ref: `refs/heads/${branchName}`,
       sha: commit.sha
     });
-  } catch (e) {
+  } catch (e: any) {
     // Branch exists from a previous attempt -- force update it
     if (e.message.includes('422')) {
       await api('PATCH', `/git/refs/heads/${branchName}`, {
@@ -337,10 +395,14 @@ export async function createProfilePR(token, repo, { author, name, profileJson, 
 /**
  * Fetch the current index.json from the repo.
  */
-export async function fetchRepoIndex(token, repo) {
+export async function fetchRepoIndex(
+  token: string,
+  repo: string,
+  profilesPath = 'profiles/claude'
+): Promise<any> {
   const fetch = await getFetch();
 
-  const response = await fetch(`${GITHUB_API}/repos/${repo}/contents/index.json`, {
+  const response = await fetch(`${GITHUB_API}/repos/${repo}/contents/${profilesPath}/index.json`, {
     headers: authHeaders(token)
   });
 
@@ -348,11 +410,11 @@ export async function fetchRepoIndex(token, repo) {
     throw new Error(`Failed to fetch index.json: ${response.status}`);
   }
 
-  const data = await response.json();
+  const data = await response.json() as { content: string };
   return JSON.parse(Buffer.from(data.content, 'base64').toString('utf-8'));
 }
 
-function buildPRBody(author, name, metadata) {
+function buildPRBody(author: string, name: string, metadata: ProfileMetadata): string {
   const lines = [
     `## Profile Submission`,
     '',
@@ -380,7 +442,7 @@ function buildPRBody(author, name, metadata) {
 /**
  * Returns setup instructions when no credentials are found.
  */
-export function getCredentialSetupInstructions() {
+export function getCredentialSetupInstructions(): string {
   return [
     '',
     'To set up HTTPS credentials for GitHub:',

@@ -21,3 +21,6 @@ coverage/
 # Local config
 .env
 .env.local
+dist/
+
+tsconfig.tsbuildinfo
