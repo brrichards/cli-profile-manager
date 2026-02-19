@@ -16,6 +16,6 @@
   ],
   "contents": {
     "instructions": ["copilot-instructions.md"],
-    "skill": ["review", "test-gen", "types"]
+    "skills": ["review", "test-gen", "types"]
   }
 }
