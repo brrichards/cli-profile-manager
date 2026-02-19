@@ -20,7 +20,10 @@ import {
   publishProfile,
   setRepository
 } from './commands/publish.js';
-import { getConfig } from './utils/config.js';
+import { 
+  getConfig,
+  setDefaultProvider
+ } from './utils/config.js';
 
 const VERSION = '0.1.1';
 
@@ -214,6 +217,13 @@ program
     console.log(`  ${chalk.cyan('Marketplace Repo:')}   ${config.marketplaceRepo}`);
     console.log(`  ${chalk.cyan('Default Provider:')}   ${config.defaultProvider || chalk.dim('none (uses claude)')}`);
     console.log(`  ${chalk.cyan('Cache Directory:')}    ${config.cacheDir}`);
+  });
+
+program 
+  .command('provider <name>')
+  .description('Set the default CLI provider (claude|github)')
+  .action(async (name: string) => {
+    await setDefaultProvider(name);
   });
 
 program.parse();
