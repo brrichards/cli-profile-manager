@@ -18,8 +18,7 @@ import {
   fetchRepoIndex,
   authenticateWithDeviceFlow
 } from '../../utils/auth.js';
-
-const PROFILES_PATH = 'profiles/claude';
+import { CLAUDE_PROFILES_PATH } from './constants.js';
 
 export class ClaudePublishManager implements IPublishManager {
   async publishProfile(name: string, _options: PublishProfileOptions): Promise<void> {
@@ -170,7 +169,7 @@ export class ClaudePublishManager implements IPublishManager {
   }): Promise<any> {
     const { author, name, metadata, profilePath, useFork } = params;
 
-    const index = await fetchRepoIndex(token, config.marketplaceRepo, PROFILES_PATH);
+    const index = await fetchRepoIndex(token, config.marketplaceRepo, CLAUDE_PROFILES_PATH);
 
     const publishMetadata = {
       ...metadata,
@@ -202,7 +201,7 @@ export class ClaudePublishManager implements IPublishManager {
       profileJson: JSON.stringify(publishMetadata, null, 2),
       profileFiles,
       indexUpdate: JSON.stringify(index, null, 2)
-    }, { useFork, profilesPath: PROFILES_PATH });
+    }, { useFork, profilesPath: CLAUDE_PROFILES_PATH });
 
     return pr;
   }
@@ -247,7 +246,7 @@ export class ClaudePublishManager implements IPublishManager {
       const fetch = (await import('node-fetch')).default;
 
       const response = await fetch(
-        `https://raw.githubusercontent.com/${repository}/main/index.json`
+        `https://raw.githubusercontent.com/${repository}/main/${CLAUDE_PROFILES_PATH}/index.json`
       );
 
       if (!response.ok && response.status !== 404) {

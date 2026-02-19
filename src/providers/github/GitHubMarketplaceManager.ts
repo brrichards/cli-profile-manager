@@ -12,10 +12,9 @@ import { join, dirname } from 'path';
 import type { IMarketplaceManager, ListMarketplaceOptions, InstallMarketplaceOptions } from '../../types/index.js';
 import { getConfig } from '../../utils/config.js';
 import { cleanProfileDir } from './snapshot.js';
-import { CATEGORY_LABELS } from './constants.js';
+import { CATEGORY_LABELS, GITHUB_PROFILES_PATH } from './constants.js';
 
 const INDEX_CACHE_TIME = 60 * 60 * 1000; // 1 hour
-const MARKETPLACE_PATH = 'profiles/github';
 
 interface MarketplaceProfile {
   name: string;
@@ -63,7 +62,7 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
       }
     }
 
-    const indexUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${MARKETPLACE_PATH}/index.json`;
+    const indexUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${GITHUB_PROFILES_PATH}/index.json`;
 
     try {
       const response = await fetch(indexUrl);
@@ -216,7 +215,7 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
       }
 
       const config = await getConfig();
-      const metadataUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${MARKETPLACE_PATH}/${author}/${name}/profile.json`;
+      const metadataUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${GITHUB_PROFILES_PATH}/${author}/${name}/profile.json`;
 
       let metadata = profile;
       try {
@@ -312,7 +311,7 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
     const spinner = ora('Downloading profile...').start();
 
     try {
-      const baseUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${MARKETPLACE_PATH}/${author}/${name}`;
+      const baseUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${GITHUB_PROFILES_PATH}/${author}/${name}`;
       const metaResponse = await fetch(`${baseUrl}/profile.json`);
 
       if (!metaResponse.ok) {

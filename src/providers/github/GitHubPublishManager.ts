@@ -18,6 +18,7 @@ import {
   fetchRepoIndex,
   authenticateWithDeviceFlow
 } from '../../utils/auth.js';
+import { GITHUB_PROFILES_PATH } from './constants.js';
 
 const PROFILES_PATH = 'profiles/github';
 
@@ -229,7 +230,7 @@ export class GitHubPublishManager implements IPublishManager {
     try {
       const fetch = (await import('node-fetch')).default;
       const response = await fetch(
-        `https://raw.githubusercontent.com/${repository}/main/index.json`
+        `https://raw.githubusercontent.com/${repository}/main/${GITHUB_PROFILES_PATH}/index.json`
       );
 
       if (!response.ok && response.status !== 404) {

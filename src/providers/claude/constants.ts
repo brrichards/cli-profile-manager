@@ -62,3 +62,5 @@ export const CATEGORY_LABELS: Record<string, string> = {
   hooks: 'Hooks',
   instructions: 'Instructions'
 };
+
+export const CLAUDE_PROFILES_PATH = 'profiles/claude';

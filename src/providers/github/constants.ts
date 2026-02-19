@@ -33,3 +33,5 @@ export const CATEGORY_LABELS: Record<string, string> = {
   agents: 'Agents',
   instructions: 'Instructions',
 };
+
+export const GITHUB_PROFILES_PATH = 'profiles/github';
