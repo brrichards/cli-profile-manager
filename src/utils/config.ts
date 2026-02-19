@@ -1,6 +1,7 @@
 import { homedir } from 'os';
 import { join } from 'path';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import chalk from 'chalk';
 import type { CLIType } from '../types/index.js';
 
 const HOME = homedir();
@@ -136,6 +137,19 @@ export async function updateConfig(updates: Partial<UserConfig>): Promise<AppCon
   writeFileSync(PATHS.config, JSON.stringify(toSave, null, 2));
 
   return newConfig;
+}
+
+/**
+ * Update the default CLI provider in the configuration
+ */
+export async function setDefaultProvider(provider: string): Promise<void> {
+  const normalized = provider.toLowerCase();
+  if (normalized !== 'claude' && normalized !== 'github') {
+    console.log(chalk.red(`Invalid provider: ${provider}. Must be 'claude' or 'github'`));
+    process.exit(1);
+  }
+  await updateConfig({ defaultProvider: normalized as CLIType });
+  console.log(chalk.green(`Default provider set to '${normalized}'`));
 }
 
 /**
