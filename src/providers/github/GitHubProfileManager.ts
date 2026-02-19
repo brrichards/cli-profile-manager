@@ -293,7 +293,7 @@ export class GitHubProfileManager implements IProfileManager {
     console.log(chalk.cyan('Tags:        ') + (metadata?.tags?.join(', ') || chalk.dim('None')));
     console.log(chalk.cyan('Created:     ') + (metadata?.createdAt ? new Date(metadata.createdAt).toLocaleString() : chalk.dim('Unknown')));
     console.log(chalk.cyan('Platform:    ') + (metadata?.platform || chalk.dim('Unknown')));
-    console.log(chalk.cyan('Installs to: ') + join(config.githubDir, name));
+    console.log(chalk.cyan('CLI version: ') + (metadata?.cliVersion || chalk.dim('Unknown')));
 
     const contents = this.getContents(metadata);
     if (Object.keys(contents).length > 0) {

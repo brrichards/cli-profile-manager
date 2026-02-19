@@ -6,7 +6,7 @@
   "tags": ["git", "workflow", "pull-requests"],
   "createdAt": "2026-02-16T00:00:00Z",
   "platform": "cross-platform",
-  "claudeVersion": "1.0.0",
+  "cliVersion": "1.0.0",
   "includesSecrets": false,
   "files": [
     "CLAUDE.md",
