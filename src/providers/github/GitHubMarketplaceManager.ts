@@ -15,7 +15,7 @@ import { cleanProfileDir } from './snapshot.js';
 import { CATEGORY_LABELS } from './constants.js';
 
 const INDEX_CACHE_TIME = 60 * 60 * 1000; // 1 hour
-const MARKETPLACE_PATH = 'profiles/github/marketplace';
+const MARKETPLACE_PATH = 'profiles/github';
 
 interface MarketplaceProfile {
   name: string;

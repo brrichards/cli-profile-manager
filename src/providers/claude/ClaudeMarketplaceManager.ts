@@ -15,6 +15,7 @@ import { cleanProfileContent } from './snapshot.js';
 import { CATEGORY_LABELS } from './constants.js';
 
 const INDEX_CACHE_TIME = 60 * 60 * 1000; // 1 hour
+const MARKETPLACE_PATH = "profiles/claude";
 
 interface MarketplaceProfile {
   name: string;
@@ -73,7 +74,7 @@ export class ClaudeMarketplaceManager implements IMarketplaceManager {
       }
     }
 
-    const indexUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/profiles/claude/index.json`;
+    const indexUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${MARKETPLACE_PATH}/index.json`;
 
     try {
       const response = await fetch(indexUrl);
@@ -240,7 +241,7 @@ export class ClaudeMarketplaceManager implements IMarketplaceManager {
       }
 
       const config = await getConfig();
-      const metadataUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/profiles/claude/${author}/${name}/profile.json`;
+      const metadataUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${MARKETPLACE_PATH}/${author}/${name}/profile.json`;
 
       let metadata = profile;
       try {
@@ -344,7 +345,7 @@ export class ClaudeMarketplaceManager implements IMarketplaceManager {
     try {
       const config = await getConfig();
       const claudeDir = config.claudeDir;
-      const baseUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/profiles/claude/${author}/${name}`;
+      const baseUrl = `https://raw.githubusercontent.com/${config.marketplaceRepo}/main/${MARKETPLACE_PATH}/${author}/${name}`;
 
       const metaResponse = await fetch(`${baseUrl}/profile.json`);
 
