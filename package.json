@@ -1,6 +1,6 @@
 {
   "name": "cli-profile-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Save, share, and load CLI profiles - a marketplace for Claude Code and GitHub CLI configurations",
   "type": "module",
   "main": "dist/cli.js",
