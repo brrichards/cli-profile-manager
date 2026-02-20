@@ -129,9 +129,11 @@ async function installGitHub() {
 
   // copilot-instructions.md
   for (const file of contents.instructions || []) {
-    console.log(`    Installing instructions: ${file}`);
-    const body = await fetchText(`${RAW_BASE}/${file}`);
-    writeFileSync(join(destDir, "copilot-instructions.md"), body);
+    if (file === "copilot-instructions.md") {
+      console.log(`    Installing instructions: ${file}`);
+      const body = await fetchText(`${RAW_BASE}/${file}`);
+      writeFileSync(join(destDir, "copilot-instructions.md"), body);
+    }
   }
 
   // Skills
@@ -150,6 +152,23 @@ async function installGitHub() {
     mkdirSync(agentsDir, { recursive: true });
     const body = await fetchText(`${RAW_BASE}/agents/${agent}.md`);
     writeFileSync(join(agentsDir, `${agent}.md`), body);
+  }
+
+  // Custom instructions
+  for (const instruction of contents.instructions || []) {
+    if (instruction === "copilot-instructions.md") continue; // handled above
+    console.log(`    Installing instruction: ${instruction}`);
+    const instructionsDir = join(destDir, "instructions");
+    mkdirSync(instructionsDir, { recursive: true });
+    const body = await fetchText(`${RAW_BASE}/instructions/${instruction}.md`);
+    writeFileSync(join(instructionsDir, `${instruction}.md`), body);
+  }
+
+  // MCP config
+  if ((contents.mcp || []).includes("mcp-config.json")) {
+    console.log(`    Installing mcp-config.json`);
+    const body = await fetchText(`${RAW_BASE}/mcp-config.json`);
+    writeFileSync(join(destDir, "mcp-config.json"), body);
   }
 
   console.log(`\n==> Done! GitHub Copilot profile '${author}/${profile}' installed to ${destDir}`);

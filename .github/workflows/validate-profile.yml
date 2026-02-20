@@ -47,8 +47,10 @@ jobs:
               ],
               github: [
                 'copilot-instructions.md',
+                'mcp-config.json',
                 'skills/',
-                'agents/'
+                'agents/',
+                'instructions/'
               ]
             };
 

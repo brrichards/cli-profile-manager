@@ -80,9 +80,15 @@ export function deriveContents(files: string[]): Record<string, string[]> {
       continue;
     }
 
+    if (normalized === 'mcp-config.json') {
+      if (!contents.mcp) contents.mcp = [];
+      contents.mcp.push('mcp-config.json');
+      continue;
+    }
+
     const parts = normalized.split('/');
     if (parts.length >= 2) {
-      const category = parts[0]; // 'skills' or 'agents'
+      const category = parts[0]; // 'skills', 'agents', or 'instructions'
       const itemName = parts[1].replace(/\.[^.]+$/, '');
       if (!contents[category]) contents[category] = [];
       if (!contents[category].includes(itemName)) {
@@ -142,34 +148,32 @@ export async function createSnapshot(
 }
 
 /**
- * Extract a profile to .github/<profileName>/ by copying files directly.
+ * Extract a profile into the GitHub Copilot config directory directly,
+ * replacing its content (mirrors how Claude profiles replace .claude/).
  */
 export async function extractSnapshot(
   profileDir: string,
   githubDir: string,
-  profileName: string,
   backupDir?: string
 ): Promise<void> {
   if (!existsSync(profileDir) || !existsSync(join(profileDir, 'profile.json'))) {
     throw new Error('Profile not found or corrupted');
   }
 
-  const destDir = join(githubDir, profileName);
-
-  if (backupDir && existsSync(destDir)) {
-    cpSync(destDir, backupDir, { recursive: true });
+  if (backupDir && existsSync(githubDir)) {
+    cpSync(githubDir, backupDir, { recursive: true });
   }
 
-  mkdirSync(destDir, { recursive: true });
-  cleanProfileDir(destDir);
-  copyProfileFiles(profileDir, destDir);
+  mkdirSync(githubDir, { recursive: true });
+  cleanProfileDir(githubDir);
+  copyProfileFiles(profileDir, githubDir);
 }
 
 /**
  * Remove existing copilot content from a profile directory.
  */
 export function cleanProfileDir(dir: string): void {
-  for (const entry of ['skills', 'agents', 'copilot-instructions.md']) {
+  for (const entry of ['skills', 'agents', 'instructions', 'copilot-instructions.md', 'mcp-config.json']) {
     const p = join(dir, entry);
     if (existsSync(p)) {
       rmSync(p, { recursive: true, force: true });
