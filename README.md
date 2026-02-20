@@ -60,7 +60,7 @@ Profiles snapshot your `.claude` folder and include:
 | `plugins/` | User-authored plugins |
 | `agents/` | Custom agents |
 
-Profiles are stored locally in `~/.cli-profiles/claude/` and installed to your `.claude` directory.
+Profiles are stored locally in `~/.cli-profiles/claude/` and installed to the `.claude` directory in your current working directory (repo root).
 
 ### GitHub Copilot (`--provider github`)
 
@@ -72,7 +72,7 @@ Profiles capture GitHub Copilot customizations and include:
 | `skills/` | Custom skills |
 | `agents/` | Custom agents |
 
-Profiles are stored locally in `~/.cli-profiles/github/`. When loaded, a profile is installed to `.github/<profile-name>/` in the current project directory (e.g., `.github/my-setup/`).
+Profiles are stored locally in `~/.cli-profiles/github/`. When loaded, a profile is installed to `.github/<profile-name>/` in your current working directory (repo root, e.g., `.github/my-setup/`).
 
 Sensitive files (credentials, API keys) are excluded from all profiles by default.
 
@@ -158,6 +158,8 @@ cpm install yourname/team-copilot --provider github
 
 ## Profile Storage
 
+Saved profiles live in `~/.cli-profiles/`:
+
 ```
 ~/.cli-profiles/
 ├── config.json
@@ -179,15 +181,38 @@ cpm install yourname/team-copilot --provider github
         └── github-marketplace-index.json
 ```
 
-When a GitHub Copilot profile is loaded into a project:
+## Install Targets
+
+`cpm` and the auto-install script (`install-profile.mjs`) target different directories:
+
+| Tool | Target | Example |
+|---|---|---|
+| **`cpm` (all commands)** | Current working directory (repo root) | `<cwd>/.claude`, `<cwd>/.github` |
+| **`install-profile.mjs`** | Home directory (global) | `~/.claude`, `~/.github` |
+
+**Why?** The auto-install script is designed for one-time global setup (Codespaces, devcontainers, CI). `cpm` operates on the repo you're currently working in, which means profiles work correctly in git worktrees and per-project setups.
+
+If the target directory doesn't exist when you run `cpm install` or `cpm load`, it will be created automatically.
+
+When a Claude Code profile is loaded or installed:
 
 ```
-<project-root>/
+<cwd>/
+└── .claude/
+    ├── CLAUDE.md
+    ├── commands/
+    ├── skills/
+    └── hooks/
+```
+
+When a GitHub Copilot profile is loaded or installed:
+
+```
+<cwd>/
 └── .github/
-    └── my-copilot-setup/          # installed profile
-        ├── copilot-instructions.md
-        ├── skills/
-        └── agents/
+    ├── copilot-instructions.md
+    ├── skills/
+    └── agents/
 ```
 
 ## Marketplace Repository Structure
@@ -248,12 +273,7 @@ Replace `<author> <profile>` with your desired profile. The third argument selec
 
 ### How It Works
 
-Note: The script checks the repo root for a `.claude` (or `.github`) directory first before falling back to the home directory. To force project-scoped installation, create the directory in the repo root:
-
-```bash
-mkdir .claude    # for Claude Code
-mkdir .github    # for GitHub Copilot
-```
+The install script always installs to the global home directory (`~/.claude` or `~/.copilot`). To override the target directory, use the `CLAUDE_HOME` or `GITHUB_HOME` environment variables.
 
 The install script runs three steps:
 
@@ -286,8 +306,8 @@ The install script runs three steps:
 | `PROVIDER` | `claude` | Provider to install (`claude` or `github`) |
 | `SKIP_CLAUDE_INSTALL` | `0` | Skip Claude Code CLI install (Claude only) |
 | `PROFILE_BRANCH` | `main` | Branch to fetch profiles from |
-| `CLAUDE_HOME` | `<cwd>/.claude` or `~/.claude` | Override the Claude config directory |
-| `GITHUB_HOME` | `<cwd>/.github` or `~/.github` | Override the .github directory (GitHub only) |
+| `CLAUDE_HOME` | `~/.claude` | Override the Claude config directory |
+| `GITHUB_HOME` | `~/.copilot` | Override the .github directory (GitHub only) |
 
 ### Prerequisites
 
