@@ -72,7 +72,7 @@ Profiles capture GitHub Copilot customizations and include:
 | `skills/` | Custom skills |
 | `agents/` | Custom agents |
 
-Profiles are stored locally in `~/.cli-profiles/github/`. When loaded, a profile is installed to `.github/<profile-name>/` in your current working directory (repo root, e.g., `.github/my-setup/`).
+Profiles are stored locally in `~/.cli-profiles/github/`. When loaded, a profile is installed to `.github` in your current working directory (repo root).
 
 Sensitive files (credentials, API keys) are excluded from all profiles by default.
 
@@ -188,7 +188,7 @@ Saved profiles live in `~/.cli-profiles/`:
 | Tool | Target | Example |
 |---|---|---|
 | **`cpm` (all commands)** | Current working directory (repo root) | `<cwd>/.claude`, `<cwd>/.github` |
-| **`install-profile.mjs`** | Home directory (global) | `~/.claude`, `~/.github` |
+| **`install-profile.mjs`** | Home directory (global) | `~/.claude`, `~/.copilot` |
 
 **Why?** The auto-install script is designed for one-time global setup (Codespaces, devcontainers, CI). `cpm` operates on the repo you're currently working in, which means profiles work correctly in git worktrees and per-project setups.
 
