@@ -62,11 +62,12 @@ function findClaudeDir(): string {
 /**
  * Find GitHub directory - checks project root first, then home
  * GitHub profiles will be stored in .github directory (similar to .claude)
+ * For shared projects, the profiles are stored inside the `~/.copilot` directory
  */
 function findGitHubDir(): string {
   const candidates = [
     join(process.cwd(), '.github'),
-    join(HOME, '.github'),
+    join(HOME, '.copilot'),
   ];
 
   for (const dir of candidates) {
@@ -75,7 +76,7 @@ function findGitHubDir(): string {
     }
   }
 
-  return join(HOME, '.github');
+  return join(HOME, '.copilot');
 }
 
 /**

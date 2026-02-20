@@ -280,13 +280,12 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
 
     const config = await getConfig();
     const githubDir = config.githubDir;
-    const destDir = join(githubDir, name);
 
-    if (existsSync(destDir) && !options.force) {
+    if (existsSync(githubDir) && !options.force) {
       const { confirm } = await inquirer.prompt([{
         type: 'confirm',
         name: 'confirm',
-        message: `This will replace the existing .github/${name} configuration. Continue?`,
+        message: `This will replace your current GitHub Copilot configuration. Continue?`,
         default: false
       }]);
 
@@ -299,7 +298,7 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
         const { backup } = await inquirer.prompt([{
           type: 'confirm',
           name: 'backup',
-          message: `Backup current .github/${name} folder first?`,
+          message: 'Backup current GitHub Copilot config first?',
           default: true
         }]);
         options.backup = backup;
@@ -326,14 +325,14 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
         throw new Error('Profile has no files to install');
       }
 
-      if (options.backup && existsSync(destDir)) {
+      if (options.backup && existsSync(githubDir)) {
         const { cpSync } = await import('fs');
-        const backupPath = join(config.githubProfilesDir, `.github-${name}-backup-${Date.now()}`);
-        cpSync(destDir, backupPath, { recursive: true });
+        const backupPath = join(config.githubProfilesDir, `.copilot-backup-${Date.now()}`);
+        cpSync(githubDir, backupPath, { recursive: true });
       }
 
-      mkdirSync(destDir, { recursive: true });
-      cleanProfileDir(destDir);
+      mkdirSync(githubDir, { recursive: true });
+      cleanProfileDir(githubDir);
 
       spinner.text = 'Installing profile files...';
 
@@ -346,7 +345,7 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
         }
 
         const content = await fileResponse.text();
-        const destPath = join(destDir, filePath);
+        const destPath = join(githubDir, filePath);
 
         mkdirSync(dirname(destPath), { recursive: true });
         writeFileSync(destPath, content);
@@ -359,7 +358,7 @@ export class GitHubMarketplaceManager implements IMarketplaceManager {
       }
 
       console.log('');
-      console.log(chalk.green(`GitHub Copilot profile installed at: ${destDir}`));
+      console.log(chalk.green(`GitHub Copilot profile installed at: ${githubDir}`));
       console.log('');
 
     } catch (error: any) {

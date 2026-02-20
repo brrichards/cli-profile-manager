@@ -49,8 +49,8 @@ export class GitHubProfileManager implements IProfileManager {
     }
 
     if (!configDirExists('github')) {
-      console.log(chalk.red('GitHub directory (.github) not found.'));
-      console.log(chalk.dim('  Make sure you are in a project with a .github directory.'));
+      console.log(chalk.red('GitHub Copilot directory not found (.github or ~/.copilot).'));
+      console.log(chalk.dim('  Create a .github directory in your project root, or ensure ~/.copilot exists.'));
       process.exit(1);
     }
 
@@ -105,21 +105,20 @@ export class GitHubProfileManager implements IProfileManager {
 
     const metadata = readProfileMetadata(profileDir);
     const githubDir = config.githubDir;
-    const destDir = join(githubDir, name);
 
     console.log('');
     console.log(chalk.bold('Profile: ') + chalk.cyan(name));
     if (metadata?.description) {
       console.log(chalk.dim(metadata.description));
     }
-    console.log(chalk.dim(`  Installs to: ${destDir}`));
+    console.log(chalk.dim(`  Installs to: ${githubDir}`));
     console.log('');
 
-    if (existsSync(destDir) && !options.force) {
+    if (configDirExists('github') && !options.force) {
       const { confirm } = await inquirer.prompt([{
         type: 'confirm',
         name: 'confirm',
-        message: `This will replace the existing .github/${name} configuration. Continue?`,
+        message: `This will replace your current GitHub Copilot configuration. Continue?`,
         default: false
       }]);
 
@@ -132,7 +131,7 @@ export class GitHubProfileManager implements IProfileManager {
         const { backup } = await inquirer.prompt([{
           type: 'confirm',
           name: 'backup',
-          message: `Backup current .github/${name} folder first?`,
+          message: 'Backup current GitHub Copilot config first?',
           default: true
         }]);
         options.backup = backup;
@@ -145,10 +144,10 @@ export class GitHubProfileManager implements IProfileManager {
 
     try {
       const backupDir = options.backup
-        ? join(config.githubProfilesDir, `.github-${name}-backup-${Date.now()}`)
+        ? join(config.githubProfilesDir, `.copilot-backup-${Date.now()}`)
         : undefined;
 
-      await extractSnapshot(profileDir, githubDir, name, backupDir);
+      await extractSnapshot(profileDir, githubDir, backupDir);
 
       spinner.succeed(chalk.green(`Profile loaded: ${chalk.bold(name)}`));
 
@@ -157,7 +156,7 @@ export class GitHubProfileManager implements IProfileManager {
       }
 
       console.log('');
-      console.log(chalk.green(`GitHub Copilot profile installed at: ${destDir}`));
+      console.log(chalk.green(`GitHub Copilot profile installed at: ${githubDir}`));
 
     } catch (error: any) {
       spinner.fail(chalk.red(`Failed to load profile: ${error.message}`));
