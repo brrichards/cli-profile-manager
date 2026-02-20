@@ -42,43 +42,6 @@ export interface AppConfig extends UserConfig {
 }
 
 /**
- * Find Claude directory - checks project root first (codespaces), then home
- */
-function findClaudeDir(): string {
-  const candidates = [
-    join(process.cwd(), '.claude'),
-    join(HOME, '.claude'),
-  ];
-
-  for (const dir of candidates) {
-    if (existsSync(dir)) {
-      return dir;
-    }
-  }
-
-  return join(HOME, '.claude');
-}
-
-/**
- * Find GitHub directory - checks project root first, then home
- * GitHub profiles will be stored in .github directory (similar to .claude)
- */
-function findGitHubDir(): string {
-  const candidates = [
-    join(process.cwd(), '.github'),
-    join(HOME, '.github'),
-  ];
-
-  for (const dir of candidates) {
-    if (existsSync(dir)) {
-      return dir;
-    }
-  }
-
-  return join(HOME, '.github');
-}
-
-/**
  * Ensure required directories exist
  */
 export function ensureDirs(): void {
@@ -111,8 +74,8 @@ export async function getConfig(): Promise<AppConfig> {
     profilesDir: PATHS.base,
     claudeProfilesDir: PATHS.claude,
     githubProfilesDir: PATHS.github,
-    claudeDir: findClaudeDir(),
-    githubDir: findGitHubDir(),
+    claudeDir: join(process.cwd(), '.claude'),
+    githubDir: join(process.cwd(), '.github'),
     cacheDir: PATHS.cache,
     configFile: PATHS.config,
     marketplaceRepo: userConfig.marketplaceRepo || 'brrichards/cli-profile-manager',
@@ -170,7 +133,9 @@ export function getProfilePath(name: string, provider: CLIType): string {
  * Get the config directory for a specific CLI provider
  */
 export function getConfigDir(provider: CLIType): string {
-  return provider === 'claude' ? findClaudeDir() : findGitHubDir();
+  return provider === 'claude'
+    ? join(process.cwd(), '.claude')
+    : join(process.cwd(), '.github');
 }
 
 /**

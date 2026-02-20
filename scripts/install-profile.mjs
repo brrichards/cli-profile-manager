@@ -17,11 +17,11 @@
 //   PROVIDER=claude|github      Provider override (default: claude)
 //   SKIP_CLAUDE_INSTALL=1       Skip installing Claude Code CLI
 //   PROFILE_BRANCH=main         Branch to fetch profiles from
-//   CLAUDE_HOME=<path>          Override the Claude config directory
-//   GITHUB_HOME=<path>          Override the .github directory (default: .github in cwd)
+//   CLAUDE_HOME=<path>          Override the Claude config directory (default: ~/.claude)
+//   GITHUB_HOME=<path>          Override the .github directory (default: ~/.github)
 
 import { execSync } from "child_process";
-import { mkdirSync, writeFileSync, appendFileSync, existsSync } from "fs";
+import { mkdirSync, writeFileSync, appendFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
@@ -61,12 +61,7 @@ async function installClaude() {
     }
   }
 
-  // Resolve install directory: check cwd/.claude first, then ~/.claude
-  const CLAUDE_DIR =
-    process.env.CLAUDE_HOME ||
-    (existsSync(join(process.cwd(), ".claude"))
-      ? join(process.cwd(), ".claude")
-      : join(homedir(), ".claude"));
+  const CLAUDE_DIR = process.env.CLAUDE_HOME || join(homedir(), ".claude");
 
   console.log(`==> Fetching Claude profile: ${author}/${profile}...`);
   const manifest = JSON.parse(await fetchText(`${RAW_BASE}/profile.json`));
@@ -122,13 +117,7 @@ async function installClaude() {
 // ─── GitHub Copilot ───────────────────────────────────────────────────────────
 
 async function installGitHub() {
-  // Profiles are installed to .github/<profile-name>/ in the current project.
-  // Override with GITHUB_HOME env var if needed.
-  const githubDir =
-    process.env.GITHUB_HOME ||
-    (existsSync(join(process.cwd(), ".github"))
-      ? join(process.cwd(), ".github")
-      : join(homedir(), ".github"));
+  const githubDir = process.env.GITHUB_HOME || join(homedir(), ".github");
 
   const destDir = join(githubDir, profile);
 

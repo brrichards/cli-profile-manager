@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { join } from 'path';
 import { getConfig, getProfilePath, getConfigDir, configDirExists } from '../utils/config.js';
 
 describe('config defaults', () => {
@@ -38,5 +39,29 @@ describe('config defaults', () => {
   it('configDirExists returns a boolean', () => {
     const result = configDirExists('claude');
     assert.strictEqual(typeof result, 'boolean');
+  });
+});
+
+describe('config uses cwd-based paths', () => {
+  it('getConfig claudeDir is cwd/.claude', async () => {
+    const config = await getConfig();
+    const expected = join(process.cwd(), '.claude');
+    assert.strictEqual(config.claudeDir, expected, `claudeDir should be ${expected} but got ${config.claudeDir}`);
+  });
+
+  it('getConfig githubDir is cwd/.github', async () => {
+    const config = await getConfig();
+    const expected = join(process.cwd(), '.github');
+    assert.strictEqual(config.githubDir, expected, `githubDir should be ${expected} but got ${config.githubDir}`);
+  });
+
+  it('getConfigDir claude returns cwd/.claude', () => {
+    const expected = join(process.cwd(), '.claude');
+    assert.strictEqual(getConfigDir('claude'), expected);
+  });
+
+  it('getConfigDir github returns cwd/.github', () => {
+    const expected = join(process.cwd(), '.github');
+    assert.strictEqual(getConfigDir('github'), expected);
   });
 });
