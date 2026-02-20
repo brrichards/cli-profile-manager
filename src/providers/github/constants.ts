@@ -22,16 +22,21 @@ export const GITHUB_SAFE_INCLUDES = [
   'skills/**',
   'agents',
   'agents/**',
+  'instructions',
+  'instructions/**',
+  'mcp-config.json'
 ];
 
 // Subdirectories that are part of a profile
-export const GITHUB_SAFE_DIRS = ['skills', 'agents'];
+export const GITHUB_SAFE_DIRS = ['skills', 'agents', 'instructions'];
 
 // Display labels for content categories
 export const CATEGORY_LABELS: Record<string, string> = {
   skills: 'Skills',
   agents: 'Agents',
   instructions: 'Instructions',
+  mcp: 'MCP Servers',
+  mcp_servers: 'MCP Servers',
 };
 
 export const GITHUB_PROFILES_PATH = 'profiles/github';
