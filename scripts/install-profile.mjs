@@ -17,11 +17,11 @@
 //   PROVIDER=claude|github      Provider override (default: claude)
 //   SKIP_CLAUDE_INSTALL=1       Skip installing Claude Code CLI
 //   PROFILE_BRANCH=main         Branch to fetch profiles from
-//   CLAUDE_HOME=<path>          Override the Claude config directory
-//   GITHUB_HOME=<path>          Override the .github directory (default: .github in cwd)
+//   CLAUDE_HOME=<path>          Override the Claude config directory (default: ~/.claude)
+//   GITHUB_HOME=<path>          Override the .copilot directory (default: ~/.copilot)
 
 import { execSync } from "child_process";
-import { mkdirSync, writeFileSync, appendFileSync, existsSync } from "fs";
+import { mkdirSync, writeFileSync, appendFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
@@ -61,12 +61,7 @@ async function installClaude() {
     }
   }
 
-  // Resolve install directory: check cwd/.claude first, then ~/.claude
-  const CLAUDE_DIR =
-    process.env.CLAUDE_HOME ||
-    (existsSync(join(process.cwd(), ".claude"))
-      ? join(process.cwd(), ".claude")
-      : join(homedir(), ".claude"));
+  const CLAUDE_DIR = process.env.CLAUDE_HOME || join(homedir(), ".claude");
 
   console.log(`==> Fetching Claude profile: ${author}/${profile}...`);
   const manifest = JSON.parse(await fetchText(`${RAW_BASE}/profile.json`));
@@ -122,35 +117,27 @@ async function installClaude() {
 // ─── GitHub Copilot ───────────────────────────────────────────────────────────
 
 async function installGitHub() {
-  // Profiles are installed to .github/<profile-name>/ in the current project.
-  // Override with GITHUB_HOME env var if needed.
-  const githubDir =
-    process.env.GITHUB_HOME ||
-    (existsSync(join(process.cwd(), ".github"))
-      ? join(process.cwd(), ".github")
-      : join(homedir(), ".github"));
-
-  const destDir = join(githubDir, profile);
+  const githubDir = process.env.GITHUB_HOME || join(homedir(), ".copilot");
 
   console.log(`==> Fetching GitHub Copilot profile: ${author}/${profile}...`);
   const manifest = JSON.parse(await fetchText(`${RAW_BASE}/profile.json`));
   const contents = manifest.contents || {};
 
-  mkdirSync(destDir, { recursive: true });
+  mkdirSync(githubDir, { recursive: true });
 
   // copilot-instructions.md
   for (const file of contents.instructions || []) {
     if (file === "copilot-instructions.md") {
       console.log(`    Installing instructions: ${file}`);
       const body = await fetchText(`${RAW_BASE}/${file}`);
-      writeFileSync(join(destDir, "copilot-instructions.md"), body);
+      writeFileSync(join(githubDir, "copilot-instructions.md"), body);
     }
   }
 
   // Skills
   for (const skill of contents.skills || []) {
     console.log(`    Installing skill: ${skill}`);
-    const skillDir = join(destDir, "skills", skill);
+    const skillDir = join(githubDir, "skills", skill);
     mkdirSync(skillDir, { recursive: true });
     const body = await fetchText(`${RAW_BASE}/skills/${skill}/SKILL.md`);
     writeFileSync(join(skillDir, "SKILL.md"), body);
@@ -159,7 +146,7 @@ async function installGitHub() {
   // Agents
   for (const agent of contents.agents || []) {
     console.log(`    Installing agent: ${agent}`);
-    const agentsDir = join(destDir, "agents");
+    const agentsDir = join(githubDir, "agents");
     mkdirSync(agentsDir, { recursive: true });
     const body = await fetchText(`${RAW_BASE}/agents/${agent}.md`);
     writeFileSync(join(agentsDir, `${agent}.md`), body);
@@ -169,7 +156,7 @@ async function installGitHub() {
   for (const instruction of contents.instructions || []) {
     if (instruction === "copilot-instructions.md") continue; // handled above
     console.log(`    Installing instruction: ${instruction}`);
-    const instructionsDir = join(destDir, "instructions");
+    const instructionsDir = join(githubDir, "instructions");
     mkdirSync(instructionsDir, { recursive: true });
     const body = await fetchText(`${RAW_BASE}/instructions/${instruction}.md`);
     writeFileSync(join(instructionsDir, `${instruction}.md`), body);
@@ -179,10 +166,10 @@ async function installGitHub() {
   if ((contents.mcp || []).includes("mcp-config.json")) {
     console.log(`    Installing mcp-config.json`);
     const body = await fetchText(`${RAW_BASE}/mcp-config.json`);
-    writeFileSync(join(destDir, "mcp-config.json"), body);
+    writeFileSync(join(githubDir, "mcp-config.json"), body);
   }
 
-  console.log(`\n==> Done! GitHub Copilot profile '${author}/${profile}' installed to ${destDir}`);
+  console.log(`\n==> Done! GitHub Copilot profile '${author}/${profile}' installed to ${githubDir}`);
 }
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
