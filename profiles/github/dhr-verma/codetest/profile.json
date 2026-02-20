@@ -1,0 +1,20 @@
+{
+  "name": "codetest",
+  "provider": "github",
+  "version": "1.0.0",
+  "description": "",
+  "tags": [],
+  "createdAt": "2026-02-19T20:17:41.705Z",
+  "platform": "darwin",
+  "files": [
+    "copilot-instructions.md"
+  ],
+  "cliVersion": "gh version 2.86.0 (2026-01-21)",
+  "contents": {
+    "instructions": [
+      "copilot-instructions.md"
+    ]
+  },
+  "author": "dhr-verma",
+  "publishedAt": "2026-02-19T20:19:42.662Z"
+}

@@ -1,19 +1,44 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-02-19T00:00:00Z",
+  "lastUpdated": "2026-02-19T20:19:42.667Z",
   "profiles": [
     {
       "name": "code-quality",
       "author": "marketplace",
       "version": "1.0.0",
       "description": "Code review, test generation, and type safety commands with quality-focused hooks",
-      "tags": ["code-review", "testing", "type-safety"],
+      "tags": [
+        "code-review",
+        "testing",
+        "type-safety"
+      ],
       "downloads": 0,
       "stars": 0,
       "createdAt": "2026-02-19T00:00:00Z",
       "contents": {
-        "instructions": ["copilot-instructions.md"],
-        "skill": ["review", "test-gen", "types"]
+        "instructions": [
+          "copilot-instructions.md"
+        ],
+        "skill": [
+          "review",
+          "test-gen",
+          "types"
+        ]
+      }
+    },
+    {
+      "name": "codetest",
+      "author": "dhr-verma",
+      "version": "1.0.0",
+      "description": "",
+      "tags": [],
+      "downloads": 0,
+      "stars": 0,
+      "createdAt": "2026-02-19T20:19:42.662Z",
+      "contents": {
+        "instructions": [
+          "copilot-instructions.md"
+        ]
       }
     }
   ]
