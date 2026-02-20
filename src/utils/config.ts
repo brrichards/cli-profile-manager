@@ -42,47 +42,6 @@ export interface AppConfig extends UserConfig {
 }
 
 /**
-<<<<<<< change-install-path
-=======
- * Find Claude directory - checks project root first (codespaces), then home
- */
-function findClaudeDir(): string {
-  const candidates = [
-    join(process.cwd(), '.claude'),
-    join(HOME, '.claude'),
-  ];
-
-  for (const dir of candidates) {
-    if (existsSync(dir)) {
-      return dir;
-    }
-  }
-
-  return join(HOME, '.claude');
-}
-
-/**
- * Find GitHub directory - checks project root first, then home
- * GitHub profiles will be stored in .github directory (similar to .claude)
- * For shared projects, the profiles are stored inside the `~/.copilot` directory
- */
-function findGitHubDir(): string {
-  const candidates = [
-    join(process.cwd(), '.github'),
-    join(HOME, '.copilot'),
-  ];
-
-  for (const dir of candidates) {
-    if (existsSync(dir)) {
-      return dir;
-    }
-  }
-
-  return join(HOME, '.copilot');
-}
-
-/**
->>>>>>> main
  * Ensure required directories exist
  */
 export function ensureDirs(): void {
