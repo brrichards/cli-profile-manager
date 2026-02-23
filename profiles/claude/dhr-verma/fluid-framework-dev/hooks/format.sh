@@ -23,7 +23,4 @@ cd "$REPO_ROOT"
 # Format all files changed since main — Biome handles the extensions it supports
 pnpm run format:changed:main 2>&1 || true
 
-# Lint-fix all affected packages
-pnpm run lint:fix 2>&1 || true
-
 exit 0

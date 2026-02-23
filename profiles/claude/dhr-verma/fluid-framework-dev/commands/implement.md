@@ -68,7 +68,7 @@ pnpm run build:compile
 pnpm run test
 ```
 
-If tests fail, invoke the **`coder` agent** with the test failure output and the original plan, asking it to fix only the failing tests. Re-run `pnpm run test` after each fix. Repeat up to **2 attempts**. If still failing, surface the failures to the user and **halt**.
+If tests fail, invoke the **`coder` agent** with the test failure output and the original plan, asking it to fix only the failing tests. Re-run `pnpm run build:compile` and `pnpm run test` after each fix. Repeat up to **2 attempts**. If still failing, surface the failures to the user and **halt**.
 
 ---
 
@@ -78,7 +78,7 @@ If tests fail, invoke the **`coder` agent** with the test failure output and the
 pnpm run lint:fix
 ```
 
-If this modifies any files, stage those changes and report which files were touched.
+If this modifies any files, stage those changes and report which files were touched. If there are lint failures, invoke the **`coder` agent** with the failure output and the original plan, asking it to fix only the error. Re-run `pnpm run build:compile` and `pnpm run test` after each fix. Repeat up to **2 attempts**. If still failing, surface the failures to the user and **halt**.
 
 ---
 
