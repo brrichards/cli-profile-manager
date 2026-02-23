@@ -75,6 +75,14 @@ async function installClaude() {
     appendFileSync(join(CLAUDE_DIR, "CLAUDE.md"), body + "\n");
   }
 
+  // Settings
+  for (const file of contents.settings || []) {
+    console.log(`    Installing settings: ${file}`);
+    const body = await fetchText(`${RAW_BASE}/${file}`);
+    mkdirSync(CLAUDE_DIR, { recursive: true });
+    appendFileSync(join(CLAUDE_DIR, "settings.json"), body + "\n");
+  }
+
   // Commands
   for (const cmd of contents.commands || []) {
     console.log(`    Installing command: ${cmd}`);

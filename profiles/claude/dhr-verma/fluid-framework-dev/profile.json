@@ -1,0 +1,33 @@
+{
+  "name": "fluid-framework-dev",
+  "provider": "claude",
+  "version": "1.0.0",
+  "description": "A claude profile that is designed to write code to fix issues/design features for FluidFramework.",
+  "tags": [],
+  "createdAt": "2026-02-23T19:59:13.801Z",
+  "cliVersion": "2.1.50 (Claude Code)",
+  "platform": "darwin",
+  "includesSecrets": false,
+  "files": [
+    "agents/coder.md",
+    "agents/planner.md",
+    "agents/reviewer.md",
+    "commands/implement.md",
+    "hooks/format.sh"
+  ],
+  "contents": {
+    "agents": [
+      "coder",
+      "planner",
+      "reviewer"
+    ],
+    "commands": [
+      "implement"
+    ],
+    "hooks": [
+      "format"
+    ]
+  },
+  "author": "dhr-verma",
+  "publishedAt": "2026-02-23T19:59:58.064Z"
+}

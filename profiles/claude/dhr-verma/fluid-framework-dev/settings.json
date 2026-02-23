@@ -1,0 +1,24 @@
+{
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": ".claude/hooks/format.sh"
+					}
+				]
+			}
+		]
+	},
+	"permissions": {
+		"deny": [
+			"Bash(rm -rf *)",
+			"Bash(git push --force *)",
+			"Read(./.env)",
+			"Bash(git add .)",
+			"Bash(git add -A)"
+		]
+    }
+}

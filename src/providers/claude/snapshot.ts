@@ -120,6 +120,12 @@ export function deriveContents(files: string[]): Record<string, string[]> {
       continue;
     }
 
+    if (normalized === 'settings.json') {
+      if (!contents.settings) contents.settings = [];
+      contents.settings.push('settings.json');
+      continue;
+    }
+
     if (normalized === 'mcp.json') {
       if (!contents.mcp) contents.mcp = [];
       contents.mcp.push('mcp.json');
@@ -310,7 +316,7 @@ export function cleanProfileContent(claudeDir: string): void {
   }
 
   // Individual files to remove
-  const contentFiles = ['CLAUDE.md', 'mcp.json'];
+  const contentFiles = ['CLAUDE.md', 'mcp.json', 'settings.json'];
   for (const file of contentFiles) {
     const filePath = join(claudeDir, file);
     if (existsSync(filePath)) {
