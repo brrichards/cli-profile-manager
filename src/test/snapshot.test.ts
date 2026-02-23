@@ -39,12 +39,14 @@ describe('getFilesToArchive', () => {
     writeFileSync(join(testDir, 'CLAUDE.md'), 'instructions');
     writeFileSync(join(testDir, 'commands', 'foo.md'), 'command');
     writeFileSync(join(testDir, 'secrets', 'key.pem'), 'secret');
+    writeFileSync(join(testDir, 'settings.json'), 'settings');
     writeFileSync(join(testDir, '.credentials'), 'creds');
     writeFileSync(join(testDir, 'random.txt'), 'not allowed');
 
     try {
       const files = getFilesToArchive(testDir);
       assert.ok(files.includes('CLAUDE.md'), 'should include CLAUDE.md');
+      assert.ok(files.includes('settings.json'), 'should include settings.json');
       assert.ok(files.includes('commands/foo.md'), 'should include commands/foo.md');
       assert.ok(!files.includes('secrets/key.pem'), 'should not include secrets/');
       assert.ok(!files.includes('.credentials'), 'should not include .credentials');
