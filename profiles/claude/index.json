@@ -91,7 +91,7 @@
       }
     },
     {
-      "name": "FluidFrameworkAgent",
+      "name": "fluid-framework-dev",
       "author": "dhr-verma",
       "version": "1.0.0",
       "description": "A claude profile that is designed to write code to fix issues/design features for FluidFramework.",
