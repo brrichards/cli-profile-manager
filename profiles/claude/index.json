@@ -109,7 +109,7 @@
           "implement"
         ],
         "hooks": [
-          "format-lint"
+          "format"
         ]
       }
     }
