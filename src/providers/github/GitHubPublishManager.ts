@@ -124,7 +124,8 @@ export class GitHubPublishManager implements IPublishManager {
       console.log(chalk.dim('A maintainer will review and merge your profile.'));
       console.log('');
     } catch (error: any) {
-      if (error.message.includes('403') && !useFork) {
+      // github returns 404 if publisher does not have write access for security reasons, so check for both 403 and 404 to detect insufficient permissions
+      if ((error.message.includes('403') || error.message.includes(`404`)) && !useFork) {
         publishSpinner.warn(chalk.yellow('Credentials lack write access to marketplace repo.'));
         console.log(chalk.dim('  Falling back to browser authentication...'));
         console.log('');
