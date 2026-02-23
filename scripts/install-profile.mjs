@@ -80,7 +80,7 @@ async function installClaude() {
     console.log(`    Installing settings: ${file}`);
     const body = await fetchText(`${RAW_BASE}/${file}`);
     mkdirSync(CLAUDE_DIR, { recursive: true });
-    appendFileSync(join(CLAUDE_DIR, "settings.json"), body + "\n");
+    writeFileSync(join(CLAUDE_DIR, "settings.json"), body);
   }
 
   // Commands
@@ -166,18 +166,6 @@ async function installClaude() {
     }
     mkdirSync(join(CLAUDE_DIR, "plugins"), { recursive: true });
     writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
-
-    // Merge enabledPlugins into settings.json
-    const settingsPath = join(CLAUDE_DIR, "settings.json");
-    let settings = {};
-    if (existsSync(settingsPath)) {
-      try { settings = JSON.parse(readFileSync(settingsPath, "utf-8")); } catch {}
-    }
-    if (!settings.enabledPlugins) settings.enabledPlugins = {};
-    for (const plugin of plugins) {
-      settings.enabledPlugins[`${plugin.name}@${plugin.marketplace}`] = true;
-    }
-    writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 
     for (const plugin of plugins) {
       console.log(`    Registered plugin: ${plugin.name}@${plugin.marketplace} v${plugin.version}`);

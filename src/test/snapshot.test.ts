@@ -140,7 +140,7 @@ describe('readInstalledPlugins', () => {
 });
 
 describe('registerPlugins', () => {
-  it('writes installed_plugins.json to global dir and enabledPlugins to profile dir', () => {
+  it('writes installed_plugins.json and cache files to global dir', () => {
     const globalDir = join(tmpdir(), `cpm-test-global-${Date.now()}`);
     const profileDir = join(tmpdir(), `cpm-test-profile-${Date.now()}`);
     mkdirSync(join(profileDir, 'plugins', 'cache', 'org-mkt', 'my-plugin', '1.0.0'), { recursive: true });
@@ -168,9 +168,8 @@ describe('registerPlugins', () => {
       // Plugin cache files should be copied to global dir
       assert.ok(existsSync(join(globalDir, 'plugins', 'cache', 'org-mkt', 'my-plugin', '1.0.0', 'README.md')), 'should copy cache files to global dir');
 
-      // enabledPlugins should be in profile dir
-      const settings = JSON.parse(readFileSync(join(profileDir, 'settings.json'), 'utf-8'));
-      assert.strictEqual(settings.enabledPlugins['my-plugin@org-mkt'], true);
+      // settings.json should NOT be modified by registerPlugins (enabledPlugins is handled by settings.json being part of the profile)
+      assert.ok(!existsSync(join(profileDir, 'settings.json')), 'should not create settings.json');
     } finally {
       process.env.CLAUDE_CONFIG_DIR = origEnv;
       if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;

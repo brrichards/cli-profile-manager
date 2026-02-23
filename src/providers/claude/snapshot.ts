@@ -491,29 +491,6 @@ export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void 
   }
 
   writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
-
-  // Merge enabledPlugins into the profile's settings.json
-  const settingsPath = join(claudeDir, 'settings.json');
-  let settings: any = {};
-
-  if (existsSync(settingsPath)) {
-    try {
-      settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    } catch {
-      // Start fresh if corrupted
-    }
-  }
-
-  if (!settings.enabledPlugins) {
-    settings.enabledPlugins = {};
-  }
-
-  for (const plugin of plugins) {
-    const key = `${plugin.name}@${plugin.marketplace}`;
-    settings.enabledPlugins[key] = true;
-  }
-
-  writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 }
 
 /**
