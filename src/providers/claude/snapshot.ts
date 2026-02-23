@@ -5,8 +5,9 @@
 
 import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, rmSync, cpSync } from 'fs';
 import { join, dirname, sep } from 'path';
+import { homedir } from 'os';
 import { execSync } from 'child_process';
-import type { ProfileMetadata } from '../../types/index.js';
+import type { ProfileMetadata, PluginInfo } from '../../types/index.js';
 import { SAFE_INCLUDES, CLAUDE_EXCLUDES, PLUGIN_INFRA_DIRS } from './constants.js';
 
 /**
@@ -81,6 +82,26 @@ function shouldExclude(name: string, path: string, excludes: string[]): boolean 
     }
   }
   return false;
+}
+
+/**
+ * Recursively collect files from a plugin's cache directory into the files list.
+ */
+function collectPluginFiles(pluginDir: string, relativePath: string, files: string[]): void {
+  const entries = readdirSync(pluginDir);
+  for (const entry of entries) {
+    const fullPath = join(pluginDir, entry);
+    const relPath = `${relativePath}/${entry}`;
+    const stat = statSync(fullPath);
+    if (stat.isDirectory()) {
+      collectPluginFiles(fullPath, relPath, files);
+    } else {
+      const normalized = relPath.split(sep).join('/');
+      if (!files.includes(normalized)) {
+        files.push(normalized);
+      }
+    }
+  }
 }
 
 /**
@@ -193,6 +214,19 @@ export async function createSnapshot(
 
   // Get list of files to include
   const files = getFilesToArchive(claudeDir, options.includeSecrets);
+
+  // Discover installed plugins and include their cache files
+  const plugins = readInstalledPlugins(claudeDir);
+  if (plugins.length > 0) {
+    metadata.plugins = plugins;
+    for (const plugin of plugins) {
+      const pluginDir = join(claudeDir, plugin.relativePath);
+      if (existsSync(pluginDir)) {
+        collectPluginFiles(pluginDir, plugin.relativePath, files);
+      }
+    }
+  }
+
   metadata.files = files;
 
   // Copy each file into the profile directory
@@ -242,6 +276,12 @@ export async function extractSnapshot(
 
   // Copy profile files (excluding profile.json) into .claude
   copyProfileFiles(profileDir, claudeDir);
+
+  // Register any plugins included in the profile
+  const metadata = readProfileMetadata(profileDir);
+  if (metadata?.plugins && metadata.plugins.length > 0) {
+    registerPlugins(claudeDir, metadata.plugins);
+  }
 }
 
 /**
@@ -335,6 +375,139 @@ function copyDirMerge(src: string, dest: string): void {
       }
     }
   }
+}
+
+/**
+ * Read installed plugins from a .claude directory.
+ * Parses installed_plugins.json and returns portable plugin metadata.
+ */
+export function readInstalledPlugins(claudeDir: string): PluginInfo[] {
+  const installedPath = join(claudeDir, 'plugins', 'installed_plugins.json');
+  if (!existsSync(installedPath)) {
+    return [];
+  }
+
+  try {
+    const data = JSON.parse(readFileSync(installedPath, 'utf-8'));
+    const plugins: PluginInfo[] = [];
+
+    for (const [key, entries] of Object.entries(data.plugins || {})) {
+      const lastAt = key.lastIndexOf('@');
+      if (lastAt <= 0) continue;
+      const name = key.substring(0, lastAt);
+      const marketplace = key.substring(lastAt + 1);
+      if (!marketplace || !Array.isArray(entries)) continue;
+
+      for (const entry of entries as any[]) {
+        const version = entry.version || '0.0.0';
+        const relativePath = `plugins/cache/${marketplace}/${name}/${version}`;
+        plugins.push({ name, marketplace, version, relativePath });
+      }
+    }
+
+    return plugins;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Resolve the global Claude Code config directory.
+ * Respects CLAUDE_CONFIG_DIR env var, falls back to ~/.claude.
+ */
+export function getGlobalClaudeDir(): string {
+  return process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
+}
+
+/**
+ * Compare two semver version strings numerically.
+ * Returns true if `existing` is strictly newer than `incoming`.
+ * SYNC: duplicated in scripts/install-profile.mjs — keep both in sync.
+ */
+function isNewerVersion(existing: string | undefined, incoming: string): boolean {
+  if (!existing) return false;
+  const parse = (v: string) => v.split('.').map(Number);
+  const [eM = 0, em = 0, ep = 0] = parse(existing);
+  const [iM = 0, im = 0, ip = 0] = parse(incoming);
+  if (eM !== iM) return eM > iM;
+  if (em !== im) return em > im;
+  return ep > ip;
+}
+
+/**
+ * Register plugins by writing installed_plugins.json and plugin cache files
+ * to the global Claude home, and enabledPlugins to the profile's settings.json.
+ */
+export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void {
+  if (!plugins || plugins.length === 0) return;
+
+  const globalDir = getGlobalClaudeDir();
+  mkdirSync(join(globalDir, 'plugins'), { recursive: true });
+
+  // Copy plugin cache files from profile target to global home
+  for (const plugin of plugins) {
+    const srcCacheDir = join(claudeDir, plugin.relativePath);
+    const destCacheDir = join(globalDir, plugin.relativePath);
+    if (existsSync(srcCacheDir) && srcCacheDir !== destCacheDir) {
+      mkdirSync(destCacheDir, { recursive: true });
+      cpSync(srcCacheDir, destCacheDir, { recursive: true });
+    }
+  }
+
+  // Merge into global installed_plugins.json
+  const installedPath = join(globalDir, 'plugins', 'installed_plugins.json');
+  let installedData: any = { version: 2, plugins: {} };
+
+  if (existsSync(installedPath)) {
+    try {
+      installedData = JSON.parse(readFileSync(installedPath, 'utf-8'));
+    } catch {
+      // Start fresh if corrupted
+    }
+  }
+
+  const now = new Date().toISOString();
+  for (const plugin of plugins) {
+    const key = `${plugin.name}@${plugin.marketplace}`;
+    // Skip if existing version is newer (compare numerically, not lexicographically)
+    const existing = installedData.plugins[key];
+    if (existing && Array.isArray(existing) && isNewerVersion(existing[0]?.version, plugin.version)) {
+      continue;
+    }
+    const installPath = join(globalDir, plugin.relativePath);
+    installedData.plugins[key] = [{
+      scope: 'user',
+      installPath,
+      version: plugin.version,
+      installedAt: now,
+      lastUpdated: now
+    }];
+  }
+
+  writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
+
+  // Merge enabledPlugins into the profile's settings.json
+  const settingsPath = join(claudeDir, 'settings.json');
+  let settings: any = {};
+
+  if (existsSync(settingsPath)) {
+    try {
+      settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    } catch {
+      // Start fresh if corrupted
+    }
+  }
+
+  if (!settings.enabledPlugins) {
+    settings.enabledPlugins = {};
+  }
+
+  for (const plugin of plugins) {
+    const key = `${plugin.name}@${plugin.marketplace}`;
+    settings.enabledPlugins[key] = true;
+  }
+
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 }
 
 /**

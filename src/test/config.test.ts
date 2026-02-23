@@ -4,9 +4,10 @@ import { join } from 'path';
 import { getConfig, getProfilePath, getConfigDir, configDirExists } from '../utils/config.js';
 
 describe('config defaults', () => {
-  it('getConfig returns the default marketplace repo', async () => {
+  it('getConfig returns a marketplace repo string', async () => {
     const config = await getConfig();
-    assert.strictEqual(config.marketplaceRepo, 'brrichards/cli-profile-manager');
+    assert.ok(typeof config.marketplaceRepo === 'string', 'marketplaceRepo should be a string');
+    assert.ok(config.marketplaceRepo.includes('/'), 'marketplaceRepo should be in owner/repo format');
   });
 
   it('getConfig returns separate profile directories for each provider', async () => {

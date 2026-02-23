@@ -11,7 +11,7 @@ import { existsSync, writeFileSync, readFileSync, mkdirSync, cpSync } from 'fs';
 import { join, dirname } from 'path';
 import type { IMarketplaceManager, ListMarketplaceOptions, InstallMarketplaceOptions } from '../../types/index.js';
 import { getConfig, configDirExists } from '../../utils/config.js';
-import { cleanProfileContent } from './snapshot.js';
+import { cleanProfileContent, registerPlugins } from './snapshot.js';
 import { CATEGORY_LABELS, CLAUDE_PROFILES_PATH } from './constants.js';
 
 const INDEX_CACHE_TIME = 60 * 60 * 1000; // 1 hour
@@ -355,7 +355,7 @@ export class ClaudeMarketplaceManager implements IMarketplaceManager {
         throw new Error(`Download failed: ${metaResponse.status}`);
       }
 
-      const metadata = await metaResponse.json() as { files?: string[] };
+      const metadata = await metaResponse.json() as { files?: string[]; plugins?: any[] };
       const files = (metadata.files || []).map(f => f.replace(/\\/g, '/'));
 
       if (files.length === 0) {
@@ -387,6 +387,12 @@ export class ClaudeMarketplaceManager implements IMarketplaceManager {
 
         mkdirSync(dirname(destPath), { recursive: true });
         writeFileSync(destPath, content);
+      }
+
+      // Register any plugins included in the profile
+      if (metadata.plugins && metadata.plugins.length > 0) {
+        spinner.text = 'Registering plugins...';
+        registerPlugins(claudeDir, metadata.plugins);
       }
 
       spinner.succeed(chalk.green(`Installed: ${chalk.bold(profilePath)}`));

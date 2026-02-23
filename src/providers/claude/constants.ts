@@ -16,20 +16,22 @@ export const CLAUDE_EXCLUDES = [
   // Claude Code plugin infrastructure -- present in every install,
   // not user-authored content. Excluded from snapshots and preserved
   // during profile installs (cleanProfileContent).
+  'plugins/blocklist.json',
   'plugins/cache',
-  'plugins/install-counts-cache',
-  'plugins/installed_plugins',
-  'plugins/known_marketplaces',
+  'plugins/install-counts-cache.json',
+  'plugins/installed_plugins.json',
+  'plugins/known_marketplaces.json',
   'plugins/marketplaces'
 ];
 
 // Plugin subdirectories that are Claude Code infrastructure.
 // These must be preserved when cleaning profile content.
 export const PLUGIN_INFRA_DIRS = [
+  'blocklist.json',
   'cache',
-  'install-counts-cache',
-  'installed_plugins',
-  'known_marketplaces',
+  'install-counts-cache.json',
+  'installed_plugins.json',
+  'known_marketplaces.json',
   'marketplaces'
 ];
 
