@@ -48,7 +48,8 @@ export const SAFE_INCLUDES = [
   'mcp_servers',
   'mcp_servers/**',
   'agents',
-  'agents/**'
+  'agents/**',
+  "settings.json"
 ];
 
 // Display labels for content categories
