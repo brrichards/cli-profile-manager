@@ -21,7 +21,8 @@ export const CLAUDE_EXCLUDES = [
   'plugins/install-counts-cache.json',
   'plugins/installed_plugins.json',
   'plugins/known_marketplaces.json',
-  'plugins/marketplaces'
+  'plugins/marketplaces',
+  'plugins/cpm_installed_plugins.json'
 ];
 
 // Plugin subdirectories that are Claude Code infrastructure.
@@ -32,7 +33,8 @@ export const PLUGIN_INFRA_DIRS = [
   'install-counts-cache.json',
   'installed_plugins.json',
   'known_marketplaces.json',
-  'marketplaces'
+  'marketplaces',
+  'cpm_installed_plugins.json'
 ];
 
 // Files that are safe to include (functional customizations only)

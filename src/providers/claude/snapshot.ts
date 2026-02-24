@@ -283,10 +283,15 @@ export async function extractSnapshot(
   // Copy profile files (excluding profile.json) into .claude
   copyProfileFiles(profileDir, claudeDir);
 
+  // Unregister previously CPM-installed plugins before registering new ones
+  unregisterCpmPlugins();
+
   // Register any plugins included in the profile
   const metadata = readProfileMetadata(profileDir);
   if (metadata?.plugins && metadata.plugins.length > 0) {
     registerPlugins(claudeDir, metadata.plugins);
+  } else {
+    writeCpmManifest([]);
   }
 }
 
@@ -441,6 +446,71 @@ function isNewerVersion(existing: string | undefined, incoming: string): boolean
 }
 
 /**
+ * Write the CPM plugin manifest to the global plugins directory.
+ */
+export function writeCpmManifest(keys: string[]): void {
+  const globalDir = getGlobalClaudeDir();
+  const manifestPath = join(globalDir, 'plugins', 'cpm_installed_plugins.json');
+  mkdirSync(join(globalDir, 'plugins'), { recursive: true });
+  writeFileSync(manifestPath, JSON.stringify({ plugins: keys }, null, 2));
+}
+
+/**
+ * Remove plugins previously installed by CPM from installed_plugins.json
+ * and delete their cache directories. Uses the cpm_installed_plugins.json
+ * manifest to distinguish CPM-installed plugins from user-installed ones.
+ */
+export function unregisterCpmPlugins(): void {
+  const globalDir = getGlobalClaudeDir();
+  const manifestPath = join(globalDir, 'plugins', 'cpm_installed_plugins.json');
+
+  if (!existsSync(manifestPath)) return;
+
+  let manifest: { plugins: string[] };
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+  } catch {
+    return;
+  }
+
+  if (!manifest.plugins || manifest.plugins.length === 0) return;
+
+  const installedPath = join(globalDir, 'plugins', 'installed_plugins.json');
+  if (!existsSync(installedPath)) {
+    writeCpmManifest([]);
+    return;
+  }
+
+  let installedData: any;
+  try {
+    installedData = JSON.parse(readFileSync(installedPath, 'utf-8'));
+  } catch {
+    writeCpmManifest([]);
+    return;
+  }
+
+  if (!installedData.plugins) {
+    writeCpmManifest([]);
+    return;
+  }
+
+  for (const key of manifest.plugins) {
+    const entries = installedData.plugins[key];
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        if (entry.installPath) {
+          rmSync(entry.installPath, { recursive: true, force: true });
+        }
+      }
+    }
+    delete installedData.plugins[key];
+  }
+
+  writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
+  writeCpmManifest([]);
+}
+
+/**
  * Register plugins by writing installed_plugins.json and plugin cache files
  * to the global Claude home, and enabledPlugins to the profile's settings.json.
  */
@@ -473,6 +543,7 @@ export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void 
   }
 
   const now = new Date().toISOString();
+  const actuallyRegistered: string[] = [];
   for (const plugin of plugins) {
     const key = `${plugin.name}@${plugin.marketplace}`;
     // Skip if existing version is newer (compare numerically, not lexicographically)
@@ -488,9 +559,13 @@ export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void 
       installedAt: now,
       lastUpdated: now
     }];
+    actuallyRegistered.push(key);
   }
 
   writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
+
+  // Write the CPM manifest — only includes plugins actually registered (not version-skipped)
+  writeCpmManifest(actuallyRegistered);
 }
 
 /**
