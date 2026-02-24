@@ -131,7 +131,7 @@ async function installClaude() {
     return ep > ip;
   }
 
-  // Plugins — download cache files, register in installed_plugins.json, enable in settings.json
+  // Plugins — download cache files, register in installed_plugins.json
   const plugins = manifest.plugins || [];
   if (plugins.length > 0) {
     console.log(`    Installing ${plugins.length} plugin(s)...`);

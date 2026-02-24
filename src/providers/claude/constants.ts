@@ -2,9 +2,9 @@
  * Claude Code CLI specific constants
  */
 
-// Plugin subdirectories that are Claude Code infrastructure.
-// These must be preserved when cleaning profile content and
-// excluded from snapshots (via CLAUDE_EXCLUDES).
+// Plugin infrastructure entries (files and directories) managed by Claude Code.
+// Preserved during cleanProfileContent and excluded from the normal snapshot walk.
+// Note: plugin cache files for installed plugins are added separately by collectPluginFiles.
 export const PLUGIN_INFRA_DIRS = [
   'blocklist.json',
   'cache',

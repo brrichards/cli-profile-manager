@@ -31,6 +31,19 @@ describe('deriveContents', () => {
     const contents = deriveContents([]);
     assert.deepStrictEqual(contents, {});
   });
+
+  it('excludes plugin cache files from contents', () => {
+    const files = [
+      'plugins/cache/mkt/my-plugin/1.0.0/index.js',
+      'plugins/my-custom-plugin/init.js',
+      'commands/review.md'
+    ];
+
+    const contents = deriveContents(files);
+    assert.ok(!contents.plugins?.includes('cache'), 'should not include "cache" as a plugin');
+    assert.deepStrictEqual(contents.plugins, ['my-custom-plugin']);
+    assert.deepStrictEqual(contents.commands, ['review']);
+  });
 });
 
 describe('getFilesToArchive', () => {

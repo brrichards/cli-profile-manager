@@ -136,6 +136,10 @@ export function deriveContents(files: string[]): Record<string, string[]> {
     if (parts.length >= 2) {
       const category = parts[0];
       const itemName = parts[1].replace(/\.[^.]+$/, ''); // strip extension
+
+      // Skip plugin cache files — actual plugin info comes from metadata.plugins
+      if (category === 'plugins' && itemName === 'cache') continue;
+
       if (!contents[category]) contents[category] = [];
       if (!contents[category].includes(itemName)) {
         contents[category].push(itemName);
@@ -517,8 +521,8 @@ export function replaceCpmPlugins(claudeDir: string, plugins: PluginInfo[]): voi
 }
 
 /**
- * Register plugins by writing installed_plugins.json and plugin cache files
- * to the global Claude home, and enabledPlugins to the profile's settings.json.
+ * Register plugins by copying plugin cache files to the global Claude home,
+ * updating installed_plugins.json, and refreshing the CPM manifest.
  */
 export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void {
   if (!plugins || plugins.length === 0) return;
