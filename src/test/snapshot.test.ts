@@ -4,7 +4,8 @@ import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { existsSync, readFileSync } from 'fs';
-import { deriveContents, getFilesToArchive, cleanProfileContent, readInstalledPlugins, registerPlugins, unregisterCpmPlugins, replaceCpmPlugins } from '../providers/claude/snapshot.js';
+import { deriveContents, getFilesToArchive, cleanProfileContent, readInstalledPlugins, registerPlugins, unregisterCpmPlugins } from '../providers/claude/snapshot.js';
+import { PLUGIN_INFRA_DIRS } from '../providers/claude/constants.js';
 
 describe('deriveContents', () => {
   it('categorizes files into correct content buckets', () => {
@@ -60,23 +61,24 @@ describe('getFilesToArchive', () => {
   it('excludes all plugin infrastructure files from snapshots', () => {
     const testDir = join(tmpdir(), `cpm-test-infra-${Date.now()}`);
     const pluginsDir = join(testDir, 'plugins');
-    mkdirSync(join(pluginsDir, 'cache', 'mkt', 'p', '1.0.0'), { recursive: true });
-    mkdirSync(join(pluginsDir, 'marketplaces', 'official'), { recursive: true });
-    writeFileSync(join(pluginsDir, 'blocklist.json'), '{}');
-    writeFileSync(join(pluginsDir, 'install-counts-cache.json'), '{}');
-    writeFileSync(join(pluginsDir, 'installed_plugins.json'), '{}');
-    writeFileSync(join(pluginsDir, 'known_marketplaces.json'), '{}');
-    writeFileSync(join(pluginsDir, 'cache', 'mkt', 'p', '1.0.0', 'README.md'), 'hi');
-    writeFileSync(join(pluginsDir, 'marketplaces', 'official', 'index.json'), '{}');
+
+    // Create every entry from PLUGIN_INFRA_DIRS as either a dir or file
+    for (const entry of PLUGIN_INFRA_DIRS) {
+      if (entry.endsWith('.json')) {
+        mkdirSync(pluginsDir, { recursive: true });
+        writeFileSync(join(pluginsDir, entry), '{}');
+      } else {
+        mkdirSync(join(pluginsDir, entry, 'nested'), { recursive: true });
+        writeFileSync(join(pluginsDir, entry, 'nested', 'file.txt'), 'content');
+      }
+    }
 
     try {
       const files = getFilesToArchive(testDir);
-      assert.ok(!files.includes('plugins/blocklist.json'), 'should exclude blocklist.json');
-      assert.ok(!files.includes('plugins/install-counts-cache.json'), 'should exclude install-counts-cache.json');
-      assert.ok(!files.includes('plugins/installed_plugins.json'), 'should exclude installed_plugins.json');
-      assert.ok(!files.includes('plugins/known_marketplaces.json'), 'should exclude known_marketplaces.json');
-      assert.ok(!files.some(f => f.startsWith('plugins/cache/')), 'should exclude plugins/cache/');
-      assert.ok(!files.some(f => f.startsWith('plugins/marketplaces/')), 'should exclude plugins/marketplaces/');
+      for (const entry of PLUGIN_INFRA_DIRS) {
+        assert.ok(!files.some(f => f === `plugins/${entry}` || f.startsWith(`plugins/${entry}/`)),
+          `should exclude plugins/${entry}`);
+      }
     } finally {
       rmSync(testDir, { recursive: true, force: true });
     }
@@ -87,21 +89,22 @@ describe('cleanProfileContent', () => {
   it('preserves all plugin infrastructure files including .json files', () => {
     const testDir = join(tmpdir(), `cpm-test-clean-${Date.now()}`);
     const pluginsDir = join(testDir, 'plugins');
-    mkdirSync(join(pluginsDir, 'cache'), { recursive: true });
-    mkdirSync(join(pluginsDir, 'marketplaces'), { recursive: true });
-    writeFileSync(join(pluginsDir, 'blocklist.json'), '{}');
-    writeFileSync(join(pluginsDir, 'install-counts-cache.json'), '{}');
-    writeFileSync(join(pluginsDir, 'installed_plugins.json'), '{}');
-    writeFileSync(join(pluginsDir, 'known_marketplaces.json'), '{}');
+
+    // Create every entry from PLUGIN_INFRA_DIRS
+    for (const entry of PLUGIN_INFRA_DIRS) {
+      if (entry.endsWith('.json')) {
+        mkdirSync(pluginsDir, { recursive: true });
+        writeFileSync(join(pluginsDir, entry), '{}');
+      } else {
+        mkdirSync(join(pluginsDir, entry), { recursive: true });
+      }
+    }
 
     try {
       cleanProfileContent(testDir);
-      assert.ok(existsSync(join(pluginsDir, 'blocklist.json')), 'should preserve blocklist.json');
-      assert.ok(existsSync(join(pluginsDir, 'install-counts-cache.json')), 'should preserve install-counts-cache.json');
-      assert.ok(existsSync(join(pluginsDir, 'installed_plugins.json')), 'should preserve installed_plugins.json');
-      assert.ok(existsSync(join(pluginsDir, 'known_marketplaces.json')), 'should preserve known_marketplaces.json');
-      assert.ok(existsSync(join(pluginsDir, 'cache')), 'should preserve cache/');
-      assert.ok(existsSync(join(pluginsDir, 'marketplaces')), 'should preserve marketplaces/');
+      for (const entry of PLUGIN_INFRA_DIRS) {
+        assert.ok(existsSync(join(pluginsDir, entry)), `should preserve ${entry}`);
+      }
     } finally {
       rmSync(testDir, { recursive: true, force: true });
     }
@@ -204,39 +207,6 @@ describe('registerPlugins', () => {
       if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
       rmSync(globalDir, { recursive: true, force: true });
       rmSync(profileDir, { recursive: true, force: true });
-    }
-  });
-
-  it('replaces (not merges) cpm_installed_plugins.json manifest on second call', () => {
-    const globalDir = join(tmpdir(), `cpm-test-replace-${Date.now()}`);
-    const profileDir1 = join(tmpdir(), `cpm-test-profile1-${Date.now()}`);
-    const profileDir2 = join(tmpdir(), `cpm-test-profile2-${Date.now()}`);
-    mkdirSync(join(profileDir1, 'plugins', 'cache', 'mkt', 'plugin-a', '1.0.0'), { recursive: true });
-    writeFileSync(join(profileDir1, 'plugins', 'cache', 'mkt', 'plugin-a', '1.0.0', 'index.js'), '');
-    mkdirSync(join(profileDir2, 'plugins', 'cache', 'mkt', 'plugin-b', '2.0.0'), { recursive: true });
-    writeFileSync(join(profileDir2, 'plugins', 'cache', 'mkt', 'plugin-b', '2.0.0', 'index.js'), '');
-
-    const origEnv = process.env.CLAUDE_CONFIG_DIR;
-    process.env.CLAUDE_CONFIG_DIR = globalDir;
-
-    try {
-      registerPlugins(profileDir1, [{
-        name: 'plugin-a', marketplace: 'mkt', version: '1.0.0',
-        relativePath: 'plugins/cache/mkt/plugin-a/1.0.0'
-      }]);
-      registerPlugins(profileDir2, [{
-        name: 'plugin-b', marketplace: 'mkt', version: '2.0.0',
-        relativePath: 'plugins/cache/mkt/plugin-b/2.0.0'
-      }]);
-
-      const manifest = JSON.parse(readFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), 'utf-8'));
-      assert.deepStrictEqual(manifest.plugins, ['plugin-b@mkt'], 'manifest should only contain second call plugins');
-    } finally {
-      process.env.CLAUDE_CONFIG_DIR = origEnv;
-      if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
-      rmSync(globalDir, { recursive: true, force: true });
-      rmSync(profileDir1, { recursive: true, force: true });
-      rmSync(profileDir2, { recursive: true, force: true });
     }
   });
 
@@ -418,118 +388,3 @@ describe('CPM plugin tracking round-trip', () => {
   });
 });
 
-describe('replaceCpmPlugins', () => {
-  it('clears manifest when called with empty plugins array', () => {
-    const globalDir = join(tmpdir(), `cpm-test-replace-empty-${Date.now()}`);
-    const claudeDir = join(tmpdir(), `cpm-test-claude-${Date.now()}`);
-    mkdirSync(join(globalDir, 'plugins'), { recursive: true });
-    mkdirSync(claudeDir, { recursive: true });
-
-    // Pre-existing CPM manifest with a plugin
-    writeFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), JSON.stringify({
-      plugins: ['old-plugin@mkt']
-    }));
-    writeFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), JSON.stringify({
-      version: 2,
-      plugins: {
-        'old-plugin@mkt': [{ scope: 'user', installPath: '/x', version: '1.0.0', installedAt: '', lastUpdated: '' }]
-      }
-    }));
-
-    const origEnv = process.env.CLAUDE_CONFIG_DIR;
-    process.env.CLAUDE_CONFIG_DIR = globalDir;
-
-    try {
-      replaceCpmPlugins(claudeDir, []);
-
-      // Old plugin should be removed
-      const installed = JSON.parse(readFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), 'utf-8'));
-      assert.ok(!installed.plugins['old-plugin@mkt'], 'old plugin should be removed');
-
-      // Manifest should be empty
-      const manifest = JSON.parse(readFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), 'utf-8'));
-      assert.deepStrictEqual(manifest.plugins, [], 'manifest should be empty');
-    } finally {
-      process.env.CLAUDE_CONFIG_DIR = origEnv;
-      if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
-      rmSync(globalDir, { recursive: true, force: true });
-      rmSync(claudeDir, { recursive: true, force: true });
-    }
-  });
-
-  it('unregisters old plugins and registers new ones in one call', () => {
-    const globalDir = join(tmpdir(), `cpm-test-replace-swap-${Date.now()}`);
-    const claudeDir = join(tmpdir(), `cpm-test-claude-${Date.now()}`);
-    const oldCacheDir = join(globalDir, 'plugins', 'cache', 'mkt', 'old-plugin', '1.0.0');
-    mkdirSync(oldCacheDir, { recursive: true });
-    writeFileSync(join(oldCacheDir, 'index.js'), '');
-    mkdirSync(join(claudeDir, 'plugins', 'cache', 'mkt', 'new-plugin', '2.0.0'), { recursive: true });
-    writeFileSync(join(claudeDir, 'plugins', 'cache', 'mkt', 'new-plugin', '2.0.0', 'index.js'), '');
-
-    writeFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), JSON.stringify({
-      version: 2,
-      plugins: {
-        'old-plugin@mkt': [{ scope: 'user', installPath: oldCacheDir, version: '1.0.0', installedAt: '', lastUpdated: '' }]
-      }
-    }));
-    writeFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), JSON.stringify({
-      plugins: ['old-plugin@mkt']
-    }));
-
-    const origEnv = process.env.CLAUDE_CONFIG_DIR;
-    process.env.CLAUDE_CONFIG_DIR = globalDir;
-
-    try {
-      replaceCpmPlugins(claudeDir, [{
-        name: 'new-plugin', marketplace: 'mkt', version: '2.0.0',
-        relativePath: 'plugins/cache/mkt/new-plugin/2.0.0'
-      }]);
-
-      const installed = JSON.parse(readFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), 'utf-8'));
-      assert.ok(!installed.plugins['old-plugin@mkt'], 'old plugin should be removed');
-      assert.ok(installed.plugins['new-plugin@mkt'], 'new plugin should be installed');
-
-      const manifest = JSON.parse(readFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), 'utf-8'));
-      assert.deepStrictEqual(manifest.plugins, ['new-plugin@mkt']);
-
-      assert.ok(!existsSync(oldCacheDir), 'old plugin cache should be deleted');
-    } finally {
-      process.env.CLAUDE_CONFIG_DIR = origEnv;
-      if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
-      rmSync(globalDir, { recursive: true, force: true });
-      rmSync(claudeDir, { recursive: true, force: true });
-    }
-  });
-});
-
-describe('cpm_installed_plugins.json infrastructure handling', () => {
-  it('is excluded from getFilesToArchive snapshots', () => {
-    const testDir = join(tmpdir(), `cpm-test-exclude-manifest-${Date.now()}`);
-    const pluginsDir = join(testDir, 'plugins');
-    mkdirSync(pluginsDir, { recursive: true });
-    writeFileSync(join(pluginsDir, 'cpm_installed_plugins.json'), JSON.stringify({ plugins: [] }));
-
-    try {
-      const files = getFilesToArchive(testDir);
-      assert.ok(!files.includes('plugins/cpm_installed_plugins.json'), 'should exclude cpm_installed_plugins.json from snapshots');
-    } finally {
-      rmSync(testDir, { recursive: true, force: true });
-    }
-  });
-
-  it('is preserved during cleanProfileContent', () => {
-    const testDir = join(tmpdir(), `cpm-test-clean-manifest-${Date.now()}`);
-    const pluginsDir = join(testDir, 'plugins');
-    mkdirSync(pluginsDir, { recursive: true });
-    writeFileSync(join(pluginsDir, 'cpm_installed_plugins.json'), JSON.stringify({ plugins: ['foo@bar'] }));
-
-    try {
-      cleanProfileContent(testDir);
-      assert.ok(existsSync(join(pluginsDir, 'cpm_installed_plugins.json')), 'should preserve cpm_installed_plugins.json during clean');
-      const content = JSON.parse(readFileSync(join(pluginsDir, 'cpm_installed_plugins.json'), 'utf-8'));
-      assert.deepStrictEqual(content.plugins, ['foo@bar'], 'manifest content should be unchanged');
-    } finally {
-      rmSync(testDir, { recursive: true, force: true });
-    }
-  });
-});
