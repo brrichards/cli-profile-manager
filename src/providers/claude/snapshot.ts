@@ -283,16 +283,9 @@ export async function extractSnapshot(
   // Copy profile files (excluding profile.json) into .claude
   copyProfileFiles(profileDir, claudeDir);
 
-  // Unregister previously CPM-installed plugins before registering new ones
-  unregisterCpmPlugins();
-
-  // Register any plugins included in the profile
+  // Replace CPM-managed plugins with those from the new profile
   const metadata = readProfileMetadata(profileDir);
-  if (metadata?.plugins && metadata.plugins.length > 0) {
-    registerPlugins(claudeDir, metadata.plugins);
-  } else {
-    writeCpmManifest([]);
-  }
+  replaceCpmPlugins(claudeDir, metadata?.plugins || []);
 }
 
 /**
@@ -508,6 +501,19 @@ export function unregisterCpmPlugins(): void {
 
   writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
   writeCpmManifest([]);
+}
+
+/**
+ * Replace CPM-managed plugins: unregister old ones, register new ones.
+ * If plugins is empty, just clears the manifest.
+ */
+export function replaceCpmPlugins(claudeDir: string, plugins: PluginInfo[]): void {
+  unregisterCpmPlugins();
+  if (plugins.length > 0) {
+    registerPlugins(claudeDir, plugins);
+  } else {
+    writeCpmManifest([]);
+  }
 }
 
 /**

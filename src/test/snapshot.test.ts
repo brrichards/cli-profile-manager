@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { existsSync, readFileSync } from 'fs';
-import { deriveContents, getFilesToArchive, cleanProfileContent, readInstalledPlugins, registerPlugins, unregisterCpmPlugins } from '../providers/claude/snapshot.js';
+import { deriveContents, getFilesToArchive, cleanProfileContent, readInstalledPlugins, registerPlugins, unregisterCpmPlugins, replaceCpmPlugins } from '../providers/claude/snapshot.js';
 
 describe('deriveContents', () => {
   it('categorizes files into correct content buckets', () => {
@@ -414,6 +414,90 @@ describe('CPM plugin tracking round-trip', () => {
       rmSync(globalDir, { recursive: true, force: true });
       rmSync(profileDirA, { recursive: true, force: true });
       rmSync(profileDirB, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('replaceCpmPlugins', () => {
+  it('clears manifest when called with empty plugins array', () => {
+    const globalDir = join(tmpdir(), `cpm-test-replace-empty-${Date.now()}`);
+    const claudeDir = join(tmpdir(), `cpm-test-claude-${Date.now()}`);
+    mkdirSync(join(globalDir, 'plugins'), { recursive: true });
+    mkdirSync(claudeDir, { recursive: true });
+
+    // Pre-existing CPM manifest with a plugin
+    writeFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), JSON.stringify({
+      plugins: ['old-plugin@mkt']
+    }));
+    writeFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), JSON.stringify({
+      version: 2,
+      plugins: {
+        'old-plugin@mkt': [{ scope: 'user', installPath: '/x', version: '1.0.0', installedAt: '', lastUpdated: '' }]
+      }
+    }));
+
+    const origEnv = process.env.CLAUDE_CONFIG_DIR;
+    process.env.CLAUDE_CONFIG_DIR = globalDir;
+
+    try {
+      replaceCpmPlugins(claudeDir, []);
+
+      // Old plugin should be removed
+      const installed = JSON.parse(readFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), 'utf-8'));
+      assert.ok(!installed.plugins['old-plugin@mkt'], 'old plugin should be removed');
+
+      // Manifest should be empty
+      const manifest = JSON.parse(readFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), 'utf-8'));
+      assert.deepStrictEqual(manifest.plugins, [], 'manifest should be empty');
+    } finally {
+      process.env.CLAUDE_CONFIG_DIR = origEnv;
+      if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+      rmSync(globalDir, { recursive: true, force: true });
+      rmSync(claudeDir, { recursive: true, force: true });
+    }
+  });
+
+  it('unregisters old plugins and registers new ones in one call', () => {
+    const globalDir = join(tmpdir(), `cpm-test-replace-swap-${Date.now()}`);
+    const claudeDir = join(tmpdir(), `cpm-test-claude-${Date.now()}`);
+    const oldCacheDir = join(globalDir, 'plugins', 'cache', 'mkt', 'old-plugin', '1.0.0');
+    mkdirSync(oldCacheDir, { recursive: true });
+    writeFileSync(join(oldCacheDir, 'index.js'), '');
+    mkdirSync(join(claudeDir, 'plugins', 'cache', 'mkt', 'new-plugin', '2.0.0'), { recursive: true });
+    writeFileSync(join(claudeDir, 'plugins', 'cache', 'mkt', 'new-plugin', '2.0.0', 'index.js'), '');
+
+    writeFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), JSON.stringify({
+      version: 2,
+      plugins: {
+        'old-plugin@mkt': [{ scope: 'user', installPath: oldCacheDir, version: '1.0.0', installedAt: '', lastUpdated: '' }]
+      }
+    }));
+    writeFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), JSON.stringify({
+      plugins: ['old-plugin@mkt']
+    }));
+
+    const origEnv = process.env.CLAUDE_CONFIG_DIR;
+    process.env.CLAUDE_CONFIG_DIR = globalDir;
+
+    try {
+      replaceCpmPlugins(claudeDir, [{
+        name: 'new-plugin', marketplace: 'mkt', version: '2.0.0',
+        relativePath: 'plugins/cache/mkt/new-plugin/2.0.0'
+      }]);
+
+      const installed = JSON.parse(readFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), 'utf-8'));
+      assert.ok(!installed.plugins['old-plugin@mkt'], 'old plugin should be removed');
+      assert.ok(installed.plugins['new-plugin@mkt'], 'new plugin should be installed');
+
+      const manifest = JSON.parse(readFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), 'utf-8'));
+      assert.deepStrictEqual(manifest.plugins, ['new-plugin@mkt']);
+
+      assert.ok(!existsSync(oldCacheDir), 'old plugin cache should be deleted');
+    } finally {
+      process.env.CLAUDE_CONFIG_DIR = origEnv;
+      if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+      rmSync(globalDir, { recursive: true, force: true });
+      rmSync(claudeDir, { recursive: true, force: true });
     }
   });
 });
