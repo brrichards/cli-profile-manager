@@ -223,6 +223,44 @@ describe('registerPlugins', () => {
     }
   });
 
+  it('skips plugins with path traversal in relativePath', () => {
+    const globalDir = join(tmpdir(), `cpm-test-pathtraversal-${Date.now()}`);
+    const profileDir = join(tmpdir(), `cpm-test-profile-pathtraversal-${Date.now()}`);
+
+    // Create a legit plugin and a malicious one
+    mkdirSync(join(profileDir, 'plugins', 'cache', 'mkt', 'good-plugin', '1.0.0'), { recursive: true });
+    writeFileSync(join(profileDir, 'plugins', 'cache', 'mkt', 'good-plugin', '1.0.0', 'index.js'), '');
+    mkdirSync(join(profileDir, '..', 'etc'), { recursive: true });
+
+    const origEnv = process.env.CLAUDE_CONFIG_DIR;
+    process.env.CLAUDE_CONFIG_DIR = globalDir;
+
+    try {
+      registerPlugins(profileDir, [
+        { name: 'good-plugin', marketplace: 'mkt', version: '1.0.0', relativePath: 'plugins/cache/mkt/good-plugin/1.0.0' },
+        { name: 'evil-plugin', marketplace: 'mkt', version: '1.0.0', relativePath: '../../etc' },
+        { name: 'sneaky-plugin', marketplace: 'mkt', version: '1.0.0', relativePath: 'plugins/cache/../../etc' }
+      ]);
+
+      // Good plugin should be registered
+      const installed = JSON.parse(readFileSync(join(globalDir, 'plugins', 'installed_plugins.json'), 'utf-8'));
+      assert.ok(installed.plugins['good-plugin@mkt'], 'good plugin should be registered');
+
+      // Evil plugins should NOT be registered
+      assert.ok(!installed.plugins['evil-plugin@mkt'], 'plugin with path traversal should not be registered');
+      assert.ok(!installed.plugins['sneaky-plugin@mkt'], 'plugin with plugins/cache/../../ traversal should not be registered');
+
+      // Manifest should only include the good plugin
+      const manifest = JSON.parse(readFileSync(join(globalDir, 'plugins', 'cpm_installed_plugins.json'), 'utf-8'));
+      assert.deepStrictEqual(manifest.plugins, ['good-plugin@mkt']);
+    } finally {
+      process.env.CLAUDE_CONFIG_DIR = origEnv;
+      if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+      rmSync(globalDir, { recursive: true, force: true });
+      rmSync(profileDir, { recursive: true, force: true });
+    }
+  });
+
   it('does not include version-skipped plugins in manifest', () => {
     const globalDir = join(tmpdir(), `cpm-test-vskip-${Date.now()}`);
     const profileDir = join(tmpdir(), `cpm-test-profile-${Date.now()}`);
@@ -311,6 +349,57 @@ describe('unregisterCpmPlugins', () => {
       process.env.CLAUDE_CONFIG_DIR = origEnv;
       if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
       rmSync(globalDir, { recursive: true, force: true });
+    }
+  });
+
+  it('skips rmSync for installPaths outside plugins/cache/', () => {
+    const globalDir = join(tmpdir(), `cpm-test-pathval-${Date.now()}`);
+    const pluginsDir = join(globalDir, 'plugins');
+    const safeCacheDir = join(pluginsDir, 'cache', 'mkt', 'safe-plugin', '1.0.0');
+    const evilTarget = join(tmpdir(), `cpm-evil-target-${Date.now()}`);
+
+    // Create directories
+    mkdirSync(safeCacheDir, { recursive: true });
+    writeFileSync(join(safeCacheDir, 'index.js'), '');
+    mkdirSync(evilTarget, { recursive: true });
+    writeFileSync(join(evilTarget, 'important.txt'), 'do not delete');
+
+    // installed_plugins.json has a safe plugin AND one with a tampered installPath
+    writeFileSync(join(pluginsDir, 'installed_plugins.json'), JSON.stringify({
+      version: 2,
+      plugins: {
+        'safe-plugin@mkt': [{ scope: 'user', installPath: safeCacheDir, version: '1.0.0', installedAt: '', lastUpdated: '' }],
+        'evil-plugin@mkt': [{ scope: 'user', installPath: evilTarget, version: '1.0.0', installedAt: '', lastUpdated: '' }]
+      }
+    }));
+
+    // CPM manifest tracks both
+    writeFileSync(join(pluginsDir, 'cpm_installed_plugins.json'), JSON.stringify({
+      plugins: ['safe-plugin@mkt', 'evil-plugin@mkt']
+    }));
+
+    const origEnv = process.env.CLAUDE_CONFIG_DIR;
+    process.env.CLAUDE_CONFIG_DIR = globalDir;
+
+    try {
+      unregisterCpmPlugins();
+
+      // Safe plugin cache should be deleted (it's under plugins/cache/)
+      assert.ok(!existsSync(safeCacheDir), 'safe plugin cache should be deleted');
+
+      // Evil target should NOT be deleted (it's outside plugins/cache/)
+      assert.ok(existsSync(evilTarget), 'path outside plugins/cache/ should NOT be deleted');
+      assert.ok(existsSync(join(evilTarget, 'important.txt')), 'files at unsafe path should be preserved');
+
+      // Both entries should be removed from installed_plugins.json
+      const installed = JSON.parse(readFileSync(join(pluginsDir, 'installed_plugins.json'), 'utf-8'));
+      assert.ok(!installed.plugins['safe-plugin@mkt'], 'safe plugin should be removed from registry');
+      assert.ok(!installed.plugins['evil-plugin@mkt'], 'evil plugin should be removed from registry');
+    } finally {
+      process.env.CLAUDE_CONFIG_DIR = origEnv;
+      if (origEnv === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+      rmSync(globalDir, { recursive: true, force: true });
+      rmSync(evilTarget, { recursive: true, force: true });
     }
   });
 

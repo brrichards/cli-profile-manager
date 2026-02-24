@@ -9,7 +9,7 @@ import inquirer from 'inquirer';
 import fetch from 'node-fetch';
 import { existsSync, writeFileSync, readFileSync, mkdirSync, cpSync } from 'fs';
 import { join, dirname } from 'path';
-import type { IMarketplaceManager, ListMarketplaceOptions, InstallMarketplaceOptions } from '../../types/index.js';
+import type { IMarketplaceManager, ListMarketplaceOptions, InstallMarketplaceOptions, PluginInfo } from '../../types/index.js';
 import { getConfig, configDirExists } from '../../utils/config.js';
 import { cleanProfileContent, replaceCpmPlugins } from './snapshot.js';
 import { CATEGORY_LABELS, CLAUDE_PROFILES_PATH } from './constants.js';
@@ -355,7 +355,7 @@ export class ClaudeMarketplaceManager implements IMarketplaceManager {
         throw new Error(`Download failed: ${metaResponse.status}`);
       }
 
-      const metadata = await metaResponse.json() as { files?: string[]; plugins?: any[] };
+      const metadata = await metaResponse.json() as { files?: string[]; plugins?: PluginInfo[] };
       const files = (metadata.files || []).map(f => f.replace(/\\/g, '/'));
 
       if (files.length === 0) {

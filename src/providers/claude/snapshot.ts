@@ -4,7 +4,7 @@
  */
 
 import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, rmSync, cpSync } from 'fs';
-import { join, dirname, sep } from 'path';
+import { join, dirname, resolve, sep } from 'path';
 import { homedir } from 'os';
 import { execSync } from 'child_process';
 import type { ProfileMetadata, PluginInfo } from '../../types/index.js';
@@ -443,6 +443,13 @@ function isNewerVersion(existing: string | undefined, incoming: string): boolean
 }
 
 /**
+ * Check if a plugin's relativePath is unsafe (path traversal or outside plugins/cache/).
+ */
+function isUnsafePluginPath(relativePath: string): boolean {
+  return !relativePath.startsWith('plugins/cache/') || relativePath.includes('..');
+}
+
+/**
  * Write the CPM plugin manifest to the global plugins directory.
  */
 export function writeCpmManifest(keys: string[]): void {
@@ -491,11 +498,12 @@ export function unregisterCpmPlugins(): void {
     return;
   }
 
+  const safePrefix = resolve(join(globalDir, 'plugins', 'cache')) + sep;
   for (const key of manifest.plugins) {
     const entries = installedData.plugins[key];
     if (Array.isArray(entries)) {
       for (const entry of entries) {
-        if (entry.installPath) {
+        if (entry.installPath && resolve(entry.installPath).startsWith(safePrefix)) {
           rmSync(entry.installPath, { recursive: true, force: true });
         }
       }
@@ -532,6 +540,9 @@ export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void 
 
   // Copy plugin cache files from profile target to global home
   for (const plugin of plugins) {
+    if (isUnsafePluginPath(plugin.relativePath)) {
+      continue;
+    }
     const srcCacheDir = join(claudeDir, plugin.relativePath);
     const destCacheDir = join(globalDir, plugin.relativePath);
     if (existsSync(srcCacheDir) && srcCacheDir !== destCacheDir) {
@@ -555,6 +566,10 @@ export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void 
   const now = new Date().toISOString();
   const actuallyRegistered: string[] = [];
   for (const plugin of plugins) {
+    // Validate relativePath is safe (must start with plugins/cache/ and contain no ..)
+    if (isUnsafePluginPath(plugin.relativePath)) {
+      continue;
+    }
     const key = `${plugin.name}@${plugin.marketplace}`;
     // Skip if existing version is newer (compare numerically, not lexicographically)
     const existing = installedData.plugins[key];
