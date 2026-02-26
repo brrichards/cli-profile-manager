@@ -2,6 +2,19 @@
  * Claude Code CLI specific constants
  */
 
+// Plugin infrastructure entries (files and directories) managed by Claude Code.
+// Preserved during cleanProfileContent and excluded from the normal snapshot walk.
+// Note: plugin cache files for installed plugins are added separately by collectPluginFiles.
+export const PLUGIN_INFRA_DIRS = [
+  'blocklist.json',
+  'cache',
+  'install-counts-cache.json',
+  'installed_plugins.json',
+  'known_marketplaces.json',
+  'marketplaces',
+  'cpm_installed_plugins.json'
+];
+
 // Files/patterns to exclude by default (secrets, caches, infra)
 export const CLAUDE_EXCLUDES = [
   '.credentials',
@@ -13,24 +26,7 @@ export const CLAUDE_EXCLUDES = [
   '.cache',
   'node_modules',
   '.git',
-  // Claude Code plugin infrastructure -- present in every install,
-  // not user-authored content. Excluded from snapshots and preserved
-  // during profile installs (cleanProfileContent).
-  'plugins/cache',
-  'plugins/install-counts-cache',
-  'plugins/installed_plugins',
-  'plugins/known_marketplaces',
-  'plugins/marketplaces'
-];
-
-// Plugin subdirectories that are Claude Code infrastructure.
-// These must be preserved when cleaning profile content.
-export const PLUGIN_INFRA_DIRS = [
-  'cache',
-  'install-counts-cache',
-  'installed_plugins',
-  'known_marketplaces',
-  'marketplaces'
+  ...PLUGIN_INFRA_DIRS.map(d => `plugins/${d}`)
 ];
 
 // Files that are safe to include (functional customizations only)
@@ -49,7 +45,7 @@ export const SAFE_INCLUDES = [
   'mcp_servers/**',
   'agents',
   'agents/**',
-  "settings.json"
+  'settings.json'
 ];
 
 // Display labels for content categories

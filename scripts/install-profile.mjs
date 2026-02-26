@@ -17,12 +17,12 @@
 //   PROVIDER=claude|github      Provider override (default: claude)
 //   SKIP_CLAUDE_INSTALL=1       Skip installing Claude Code CLI
 //   PROFILE_BRANCH=main         Branch to fetch profiles from
-//   CLAUDE_HOME=<path>          Override the Claude config directory (default: ~/.claude)
+//   CLAUDE_CONFIG_DIR=<path>     Override the Claude config directory (default: ~/.claude)
 //   GITHUB_HOME=<path>          Override the .copilot directory (default: ~/.copilot)
 
 import { execSync } from "child_process";
-import { mkdirSync, writeFileSync, appendFileSync } from "fs";
-import { join } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from "fs";
+import { join, dirname } from "path";
 import { homedir } from "os";
 
 const [author, profile, providerArg] = process.argv.slice(2);
@@ -61,7 +61,7 @@ async function installClaude() {
     }
   }
 
-  const CLAUDE_DIR = process.env.CLAUDE_HOME || join(homedir(), ".claude");
+  const CLAUDE_DIR = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
 
   console.log(`==> Fetching Claude profile: ${author}/${profile}...`);
   const manifest = JSON.parse(await fetchText(`${RAW_BASE}/profile.json`));
@@ -80,7 +80,7 @@ async function installClaude() {
     console.log(`    Installing settings: ${file}`);
     const body = await fetchText(`${RAW_BASE}/${file}`);
     mkdirSync(CLAUDE_DIR, { recursive: true });
-    appendFileSync(join(CLAUDE_DIR, "settings.json"), body + "\n");
+    writeFileSync(join(CLAUDE_DIR, "settings.json"), body);
   }
 
   // Commands
@@ -120,6 +120,59 @@ async function installClaude() {
     mkdirSync(hooksDir, { recursive: true });
     const body = await fetchText(`${RAW_BASE}/${hookPath}`);
     writeFileSync(join(hooksDir, localName), body);
+  }
+
+  // Compare two semver version strings numerically (not lexicographically).
+  // SYNC: duplicated in src/providers/claude/snapshot.ts — keep both in sync.
+  function isNewerVersion(existing, incoming) {
+    if (!existing) return false;
+    const parse = (v) => v.split('.').map(Number);
+    const [eM = 0, em = 0, ep = 0] = parse(existing);
+    const [iM = 0, im = 0, ip = 0] = parse(incoming);
+    if (eM !== iM) return eM > iM;
+    if (em !== im) return em > im;
+    return ep > ip;
+  }
+
+  // Plugins — download cache files, register in installed_plugins.json
+  const plugins = manifest.plugins || [];
+  if (plugins.length > 0) {
+    console.log(`    Installing ${plugins.length} plugin(s)...`);
+
+    // Download plugin cache files
+    const pluginFiles = (manifest.files || []).filter(f => f.startsWith("plugins/cache/"));
+    for (const filePath of pluginFiles) {
+      const body = await fetchText(`${RAW_BASE}/${filePath}`);
+      const destPath = join(CLAUDE_DIR, filePath);
+      mkdirSync(dirname(destPath), { recursive: true });
+      writeFileSync(destPath, body);
+    }
+
+    // Merge into installed_plugins.json
+    const installedPath = join(CLAUDE_DIR, "plugins", "installed_plugins.json");
+    let installedData = { version: 2, plugins: {} };
+    if (existsSync(installedPath)) {
+      try { installedData = JSON.parse(readFileSync(installedPath, "utf-8")); } catch {}
+    }
+    const now = new Date().toISOString();
+    for (const plugin of plugins) {
+      const key = `${plugin.name}@${plugin.marketplace}`;
+      const existing = installedData.plugins[key];
+      if (existing && Array.isArray(existing) && isNewerVersion(existing[0]?.version, plugin.version)) continue;
+      installedData.plugins[key] = [{
+        scope: "user",
+        installPath: join(CLAUDE_DIR, plugin.relativePath),
+        version: plugin.version,
+        installedAt: now,
+        lastUpdated: now
+      }];
+    }
+    mkdirSync(join(CLAUDE_DIR, "plugins"), { recursive: true });
+    writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
+
+    for (const plugin of plugins) {
+      console.log(`    Registered plugin: ${plugin.name}@${plugin.marketplace} v${plugin.version}`);
+    }
   }
 
   console.log(`\n==> Done! Claude profile '${author}/${profile}' installed to ${CLAUDE_DIR}`);

@@ -9,6 +9,13 @@ export type CLIType = 'claude' | 'github';
 // Common Types
 // ============================================================================
 
+export interface PluginInfo {
+  name: string;
+  marketplace: string;
+  version: string;
+  relativePath: string;
+}
+
 export interface ProfileMetadata {
   name: string;
   provider: CLIType;
@@ -21,6 +28,7 @@ export interface ProfileMetadata {
   includesSecrets?: boolean;
   files: string[];
   contents?: Record<string, string[]>;
+  plugins?: PluginInfo[];
 }
 
 // ============================================================================

@@ -4,9 +4,10 @@
  */
 
 import { existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync, rmSync, cpSync } from 'fs';
-import { join, dirname, sep } from 'path';
+import { join, dirname, resolve, sep } from 'path';
+import { homedir } from 'os';
 import { execSync } from 'child_process';
-import type { ProfileMetadata } from '../../types/index.js';
+import type { ProfileMetadata, PluginInfo } from '../../types/index.js';
 import { SAFE_INCLUDES, CLAUDE_EXCLUDES, PLUGIN_INFRA_DIRS } from './constants.js';
 
 /**
@@ -84,6 +85,21 @@ function shouldExclude(name: string, path: string, excludes: string[]): boolean 
 }
 
 /**
+ * Recursively collect files from a plugin's cache directory into the files list.
+ */
+function collectPluginFiles(pluginDir: string, relativePath: string, files: Set<string>): void {
+  const entries = readdirSync(pluginDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const relPath = `${relativePath}/${entry.name}`;
+    if (entry.isDirectory()) {
+      collectPluginFiles(join(pluginDir, entry.name), relPath, files);
+    } else {
+      files.add(relPath.split(sep).join('/'));
+    }
+  }
+}
+
+/**
  * Derive a structured contents summary from a list of file paths.
  * Returns an object with category keys mapping to arrays of item names.
  */
@@ -115,6 +131,10 @@ export function deriveContents(files: string[]): Record<string, string[]> {
     if (parts.length >= 2) {
       const category = parts[0];
       const itemName = parts[1].replace(/\.[^.]+$/, ''); // strip extension
+
+      // Skip plugin cache files — actual plugin info comes from metadata.plugins
+      if (category === 'plugins' && itemName === 'cache') continue;
+
       if (!contents[category]) contents[category] = [];
       if (!contents[category].includes(itemName)) {
         contents[category].push(itemName);
@@ -198,7 +218,21 @@ export async function createSnapshot(
   };
 
   // Get list of files to include
-  const files = getFilesToArchive(claudeDir, options.includeSecrets);
+  const fileSet = new Set(getFilesToArchive(claudeDir, options.includeSecrets));
+
+  // Discover installed plugins and include their cache files
+  const plugins = readInstalledPlugins(claudeDir);
+  if (plugins.length > 0) {
+    metadata.plugins = plugins;
+    for (const plugin of plugins) {
+      const pluginDir = join(claudeDir, plugin.relativePath);
+      if (existsSync(pluginDir)) {
+        collectPluginFiles(pluginDir, plugin.relativePath, fileSet);
+      }
+    }
+  }
+
+  const files = [...fileSet];
   metadata.files = files;
 
   // Copy each file into the profile directory
@@ -248,6 +282,10 @@ export async function extractSnapshot(
 
   // Copy profile files (excluding profile.json) into .claude
   copyProfileFiles(profileDir, claudeDir);
+
+  // Replace CPM-managed plugins with those from the new profile
+  const metadata = readProfileMetadata(profileDir);
+  replaceCpmPlugins(claudeDir, metadata?.plugins || []);
 }
 
 /**
@@ -341,6 +379,214 @@ function copyDirMerge(src: string, dest: string): void {
       }
     }
   }
+}
+
+/**
+ * Read installed plugins from a .claude directory.
+ * Parses installed_plugins.json and returns portable plugin metadata.
+ */
+export function readInstalledPlugins(claudeDir: string): PluginInfo[] {
+  const installedPath = join(claudeDir, 'plugins', 'installed_plugins.json');
+  if (!existsSync(installedPath)) {
+    return [];
+  }
+
+  try {
+    const data = JSON.parse(readFileSync(installedPath, 'utf-8'));
+    const plugins: PluginInfo[] = [];
+
+    for (const [key, entries] of Object.entries(data.plugins || {})) {
+      const lastAt = key.lastIndexOf('@');
+      if (lastAt <= 0) continue;
+      const name = key.substring(0, lastAt);
+      const marketplace = key.substring(lastAt + 1);
+      if (!marketplace || !Array.isArray(entries)) continue;
+
+      for (const entry of entries as any[]) {
+        const version = entry.version || '0.0.0';
+        const relativePath = `plugins/cache/${marketplace}/${name}/${version}`;
+        plugins.push({ name, marketplace, version, relativePath });
+      }
+    }
+
+    return plugins;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Resolve the global Claude Code config directory.
+ * Respects CLAUDE_CONFIG_DIR env var, falls back to ~/.claude.
+ */
+export function getGlobalClaudeDir(): string {
+  return process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
+}
+
+/**
+ * Compare two semver version strings numerically.
+ * Returns true if `existing` is strictly newer than `incoming`.
+ * SYNC: duplicated in scripts/install-profile.mjs — keep both in sync.
+ */
+function isNewerVersion(existing: string | undefined, incoming: string): boolean {
+  if (!existing) return false;
+  const parse = (v: string) => v.split('.').map(Number);
+  const [eM = 0, em = 0, ep = 0] = parse(existing);
+  const [iM = 0, im = 0, ip = 0] = parse(incoming);
+  if (eM !== iM) return eM > iM;
+  if (em !== im) return em > im;
+  return ep > ip;
+}
+
+/**
+ * Check if a plugin's relativePath is unsafe (path traversal or outside plugins/cache/).
+ */
+function isUnsafePluginPath(relativePath: string): boolean {
+  return !relativePath.startsWith('plugins/cache/') || relativePath.includes('..');
+}
+
+/**
+ * Write the CPM plugin manifest to the global plugins directory.
+ */
+export function writeCpmManifest(keys: string[]): void {
+  const globalDir = getGlobalClaudeDir();
+  const manifestPath = join(globalDir, 'plugins', 'cpm_installed_plugins.json');
+  mkdirSync(join(globalDir, 'plugins'), { recursive: true });
+  writeFileSync(manifestPath, JSON.stringify({ plugins: keys }, null, 2));
+}
+
+/**
+ * Remove plugins previously installed by CPM from installed_plugins.json
+ * and delete their cache directories. Uses the cpm_installed_plugins.json
+ * manifest to distinguish CPM-installed plugins from user-installed ones.
+ */
+export function unregisterCpmPlugins(): void {
+  const globalDir = getGlobalClaudeDir();
+  const manifestPath = join(globalDir, 'plugins', 'cpm_installed_plugins.json');
+
+  if (!existsSync(manifestPath)) return;
+
+  let manifest: { plugins: string[] };
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+  } catch {
+    return;
+  }
+
+  if (!manifest.plugins || manifest.plugins.length === 0) return;
+
+  const installedPath = join(globalDir, 'plugins', 'installed_plugins.json');
+  if (!existsSync(installedPath)) {
+    writeCpmManifest([]);
+    return;
+  }
+
+  let installedData: any;
+  try {
+    installedData = JSON.parse(readFileSync(installedPath, 'utf-8'));
+  } catch {
+    writeCpmManifest([]);
+    return;
+  }
+
+  if (!installedData.plugins) {
+    writeCpmManifest([]);
+    return;
+  }
+
+  const safePrefix = resolve(join(globalDir, 'plugins', 'cache')) + sep;
+  for (const key of manifest.plugins) {
+    const entries = installedData.plugins[key];
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        if (entry.installPath && resolve(entry.installPath).startsWith(safePrefix)) {
+          rmSync(entry.installPath, { recursive: true, force: true });
+        }
+      }
+    }
+    delete installedData.plugins[key];
+  }
+
+  writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
+  writeCpmManifest([]);
+}
+
+/**
+ * Replace CPM-managed plugins: unregister old ones, register new ones.
+ * If plugins is empty, just clears the manifest.
+ */
+export function replaceCpmPlugins(claudeDir: string, plugins: PluginInfo[]): void {
+  unregisterCpmPlugins();
+  if (plugins.length > 0) {
+    registerPlugins(claudeDir, plugins);
+  } else {
+    writeCpmManifest([]);
+  }
+}
+
+/**
+ * Register plugins by copying plugin cache files to the global Claude home,
+ * updating installed_plugins.json, and refreshing the CPM manifest.
+ */
+export function registerPlugins(claudeDir: string, plugins: PluginInfo[]): void {
+  if (!plugins || plugins.length === 0) return;
+
+  const globalDir = getGlobalClaudeDir();
+  mkdirSync(join(globalDir, 'plugins'), { recursive: true });
+
+  // Copy plugin cache files from profile target to global home
+  for (const plugin of plugins) {
+    if (isUnsafePluginPath(plugin.relativePath)) {
+      continue;
+    }
+    const srcCacheDir = join(claudeDir, plugin.relativePath);
+    const destCacheDir = join(globalDir, plugin.relativePath);
+    if (existsSync(srcCacheDir) && srcCacheDir !== destCacheDir) {
+      mkdirSync(destCacheDir, { recursive: true });
+      cpSync(srcCacheDir, destCacheDir, { recursive: true });
+    }
+  }
+
+  // Merge into global installed_plugins.json
+  const installedPath = join(globalDir, 'plugins', 'installed_plugins.json');
+  let installedData: any = { version: 2, plugins: {} };
+
+  if (existsSync(installedPath)) {
+    try {
+      installedData = JSON.parse(readFileSync(installedPath, 'utf-8'));
+    } catch {
+      // Start fresh if corrupted
+    }
+  }
+
+  const now = new Date().toISOString();
+  const actuallyRegistered: string[] = [];
+  for (const plugin of plugins) {
+    // Validate relativePath is safe (must start with plugins/cache/ and contain no ..)
+    if (isUnsafePluginPath(plugin.relativePath)) {
+      continue;
+    }
+    const key = `${plugin.name}@${plugin.marketplace}`;
+    // Skip if existing version is newer (compare numerically, not lexicographically)
+    const existing = installedData.plugins[key];
+    if (existing && Array.isArray(existing) && isNewerVersion(existing[0]?.version, plugin.version)) {
+      continue;
+    }
+    const installPath = join(globalDir, plugin.relativePath);
+    installedData.plugins[key] = [{
+      scope: 'user',
+      installPath,
+      version: plugin.version,
+      installedAt: now,
+      lastUpdated: now
+    }];
+    actuallyRegistered.push(key);
+  }
+
+  writeFileSync(installedPath, JSON.stringify(installedData, null, 2));
+
+  // Write the CPM manifest — only includes plugins actually registered (not version-skipped)
+  writeCpmManifest(actuallyRegistered);
 }
 
 /**
