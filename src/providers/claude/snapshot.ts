@@ -87,19 +87,14 @@ function shouldExclude(name: string, path: string, excludes: string[]): boolean 
 /**
  * Recursively collect files from a plugin's cache directory into the files list.
  */
-function collectPluginFiles(pluginDir: string, relativePath: string, files: string[]): void {
-  const entries = readdirSync(pluginDir);
+function collectPluginFiles(pluginDir: string, relativePath: string, files: Set<string>): void {
+  const entries = readdirSync(pluginDir, { withFileTypes: true });
   for (const entry of entries) {
-    const fullPath = join(pluginDir, entry);
-    const relPath = `${relativePath}/${entry}`;
-    const stat = statSync(fullPath);
-    if (stat.isDirectory()) {
-      collectPluginFiles(fullPath, relPath, files);
+    const relPath = `${relativePath}/${entry.name}`;
+    if (entry.isDirectory()) {
+      collectPluginFiles(join(pluginDir, entry.name), relPath, files);
     } else {
-      const normalized = relPath.split(sep).join('/');
-      if (!files.includes(normalized)) {
-        files.push(normalized);
-      }
+      files.add(relPath.split(sep).join('/'));
     }
   }
 }
@@ -223,7 +218,7 @@ export async function createSnapshot(
   };
 
   // Get list of files to include
-  const files = getFilesToArchive(claudeDir, options.includeSecrets);
+  const fileSet = new Set(getFilesToArchive(claudeDir, options.includeSecrets));
 
   // Discover installed plugins and include their cache files
   const plugins = readInstalledPlugins(claudeDir);
@@ -232,11 +227,12 @@ export async function createSnapshot(
     for (const plugin of plugins) {
       const pluginDir = join(claudeDir, plugin.relativePath);
       if (existsSync(pluginDir)) {
-        collectPluginFiles(pluginDir, plugin.relativePath, files);
+        collectPluginFiles(pluginDir, plugin.relativePath, fileSet);
       }
     }
   }
 
+  const files = [...fileSet];
   metadata.files = files;
 
   // Copy each file into the profile directory
