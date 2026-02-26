@@ -15,6 +15,21 @@
         "instructions": ["copilot-instructions.md"],
         "skill": ["review", "test-gen", "types"]
       }
+    },
+    {
+      "name": "fluid-framework-dev",
+      "author": "marketplace",
+      "version": "1.0.0",
+      "description": "A GitHub Copilot profile designed to write code to fix issues/design features for FluidFramework.",
+      "tags": ["fluidframework", "monorepo", "development"],
+      "downloads": 0,
+      "stars": 0,
+      "createdAt": "2026-02-24T00:00:00Z",
+      "contents": {
+        "instructions": ["copilot-instructions.md"],
+        "agents": ["planner", "coder", "reviewer"],
+        "skills": ["implement"]
+      }
     }
   ]
 }
