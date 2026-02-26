@@ -112,11 +112,14 @@ async function installClaude() {
 
   // Hooks
   for (const hook of contents.hooks || []) {
-    console.log(`    Installing hook: ${hook}`);
+    const hookFile = (manifest.files || []).find(f => f.startsWith(`hooks/${hook}.`) || f === `hooks/${hook}`);
+    const hookPath = hookFile || `hooks/${hook}.md`;
+    const localName = hookPath.split('/').pop();
+    console.log(`    Installing hook: ${localName}`);
     const hooksDir = join(CLAUDE_DIR, "hooks");
     mkdirSync(hooksDir, { recursive: true });
-    const body = await fetchText(`${RAW_BASE}/hooks/${hook}.md`);
-    writeFileSync(join(hooksDir, `${hook}.md`), body);
+    const body = await fetchText(`${RAW_BASE}/${hookPath}`);
+    writeFileSync(join(hooksDir, localName), body);
   }
 
   console.log(`\n==> Done! Claude profile '${author}/${profile}' installed to ${CLAUDE_DIR}`);
