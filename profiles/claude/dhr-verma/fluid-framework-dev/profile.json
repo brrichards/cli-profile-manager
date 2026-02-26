@@ -13,7 +13,8 @@
     "agents/planner.md",
     "agents/reviewer.md",
     "commands/implement.md",
-    "hooks/format.sh"
+    "hooks/format.sh",
+    "settings.json"
   ],
   "contents": {
     "agents": [
@@ -26,6 +27,9 @@
     ],
     "hooks": [
       "format"
+    ],
+    "settings": [
+      "settings.json"
     ]
   },
   "author": "dhr-verma",
