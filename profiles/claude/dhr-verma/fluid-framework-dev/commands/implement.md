@@ -57,7 +57,7 @@ Confirm the branch was created before continuing.
 
 Invoke the **`coder` agent**. Pass it the full approved plan as the prompt.
 
-If the agent reports a build failure, invoke the **`coder` agent** again with the error output and the original plan, asking it to fix only the reported errors. Repeat up to **3 attempts** total. If still failing, surface the errors to the user and halt.
+If the agent reports a build failure, invoke the **`coder` agent** again with the error output and the original plan, asking it to fix only the reported errors. Repeat up to **3 attempts** total. If still failing, invoke the **`/go-deeper`** command — pass the original feature brief, the approved plan, each fix attempt, and the exact error output as context. Resume from Phase 4 with whatever approach `go-deeper` surfaces. If `go-deeper` escalates to Vision level, halt and wait for the user.
 
 ---
 
@@ -68,7 +68,7 @@ pnpm run build:compile
 pnpm run test
 ```
 
-If tests fail, invoke the **`coder` agent** with the test failure output and the original plan, asking it to fix only the failing tests. Re-run `pnpm run build:compile` and `pnpm run test` after each fix. Repeat up to **2 attempts**. If still failing, surface the failures to the user and **halt**.
+If tests fail, invoke the **`coder` agent** with the test failure output and the original plan, asking it to fix only the failing tests. Re-run `pnpm run build:compile` and `pnpm run test` after each fix. Repeat up to **2 attempts**. If still failing, invoke the **`/go-deeper`** command — pass the original feature brief, the approved plan, each fix attempt, and the exact test failure output as context. Resume from Phase 5 with whatever approach `go-deeper` surfaces. If `go-deeper` escalates to Vision level, halt and wait for the user.
 
 ---
 
