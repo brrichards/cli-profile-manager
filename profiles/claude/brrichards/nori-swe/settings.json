@@ -1,0 +1,66 @@
+{
+  "effortLevel": "medium",
+  "permissions": {
+    "additionalDirectories": [
+      "/home/node/.nori/profiles",
+      "/home/node/.claude/skills"
+    ]
+  },
+  "includeCoAuthoredBy": false,
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /usr/local/share/nvm/versions/node/v20.20.0/lib/node_modules/nori-skillsets/build/src/cli/features/claude-code/hooks/config/context-usage-warning.js",
+            "description": "Warn about excessive context usage from permissions on session start"
+          }
+        ]
+      },
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /usr/local/share/nvm/versions/node/v20.20.0/lib/node_modules/nori-skillsets/build/src/cli/features/claude-code/hooks/config/update-check.js",
+            "description": "Check for nori-skillsets updates and notify if available"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/share/nvm/versions/node/v20.20.0/lib/node_modules/nori-skillsets/build/src/cli/features/claude-code/hooks/config/notify-hook.sh",
+            "description": "Send desktop notification when Claude needs input"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /usr/local/share/nvm/versions/node/v20.20.0/lib/node_modules/nori-skillsets/build/src/cli/features/claude-code/hooks/config/commit-author.js",
+            "description": "Replace Claude Code co-author attribution with Nori in git commits"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/home/node/.claude/nori-statusline.sh",
+    "padding": 0
+  },
+  "companyAnnouncements": [
+    "🍙🍙🍙 Powered by Nori AI 🍙🍙🍙"
+  ]
+}
