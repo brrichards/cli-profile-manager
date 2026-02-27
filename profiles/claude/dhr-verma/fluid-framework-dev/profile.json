@@ -13,6 +13,9 @@
     "agents/planner.md",
     "agents/reviewer.md",
     "commands/implement.md",
+    "commands/diverge.md",
+    "commands/converge.md",
+    "commands/go-deeper.md",
     "hooks/format.sh",
     "settings.json"
   ],
@@ -23,7 +26,10 @@
       "reviewer"
     ],
     "commands": [
-      "implement"
+      "implement",
+      "diverge",
+      "converge",
+      "go-deeper"
     ],
     "hooks": [
       "format"

@@ -13,11 +13,14 @@
     "agents/planner.md",
     "agents/coder.md",
     "agents/reviewer.md",
-    "skills/implement.md"
+    "skills/implement.md",
+    "skills/diverge.md",
+    "skills/converge.md",
+    "skills/go-deeper.md"
   ],
   "contents": {
     "instructions": ["copilot-instructions.md"],
     "agents": ["planner", "coder", "reviewer"],
-    "skills": ["implement"]
+    "skills": ["implement", "diverge", "converge", "go-deeper"]
   }
 }

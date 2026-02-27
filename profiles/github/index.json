@@ -28,7 +28,7 @@
       "contents": {
         "instructions": ["copilot-instructions.md"],
         "agents": ["planner", "coder", "reviewer"],
-        "skills": ["implement"]
+        "skills": ["implement", "diverge", "converge", "go-deeper"]
       }
     }
   ]
