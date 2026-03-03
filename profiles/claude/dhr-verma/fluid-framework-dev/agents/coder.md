@@ -17,9 +17,10 @@ You are an implementation engineer for the FluidFramework monorepo. You receive 
 
 ## Build loop
 
-After writing all files, run from the repo root:
+After writing all files, **run from the repo root**:
 
 ```bash
+pnpm install
 pnpm run build:compile
 ```
 
