@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-02-23T19:59:58.068Z",
+  "lastUpdated": "2026-02-27T17:34:55.674Z",
   "profiles": [
     {
       "name": "devtools",
@@ -113,6 +113,57 @@
         ],
         "hooks": [
           "format"
+        ]
+      }
+    },
+    {
+      "name": "nori-swe",
+      "author": "brrichards",
+      "version": "1.0.0",
+      "description": "",
+      "tags": [],
+      "downloads": 0,
+      "stars": 0,
+      "createdAt": "2026-02-27T17:34:55.674Z",
+      "contents": {
+        "instructions": [
+          "CLAUDE.md"
+        ],
+        "agents": [
+          "nori-change-documenter",
+          "nori-code-reviewer",
+          "nori-codebase-analyzer",
+          "nori-codebase-locator",
+          "nori-codebase-pattern-finder",
+          "nori-initial-documenter",
+          "nori-web-search-researcher",
+          "paid-nori-knowledge-researcher"
+        ],
+        "commands": [
+          "nori-init-docs"
+        ],
+        "settings": [
+          "settings.json"
+        ],
+        "skills": [
+          "brainstorming",
+          "building-ui-ux",
+          "creating-debug-tests-and-iterating",
+          "creating-skills",
+          "finishing-a-development-branch",
+          "handle-large-tasks",
+          "nori-info",
+          "receiving-code-review",
+          "root-cause-tracing",
+          "systematic-debugging",
+          "test-driven-development",
+          "testing-anti-patterns",
+          "updating-noridocs",
+          "using-git-worktrees",
+          "using-screenshots",
+          "using-skills",
+          "webapp-testing",
+          "writing-plans"
         ]
       }
     }
